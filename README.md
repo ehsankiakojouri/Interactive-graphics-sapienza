@@ -14,6 +14,3 @@ Implementation of alpha blending to composite a foreground image onto a backgrou
 ### 🔄 Project 2 – Transformations
 Implementation of 2D transformations (scaling, rotation, translation) using matrix operations in JavaScript to simulate UAV movement.
 
----
-
-Feel free to explore each folder for more details and the source code.
