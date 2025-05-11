@@ -41,8 +41,23 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 	vec3 color = vec3(0,0,0);
 	for ( int i=0; i<NUM_LIGHTS; ++i ) {
 		// TO-DO: Check for shadows
+        vec3 lightDir = normalize(lights[i].position - position);
+        float lightDist = length(lights[i].position - position);
+        Ray shadowRay;                                                      
+        shadowRay.pos = position + normal * 1e-4;
+        shadowRay.dir = lightDir;
+        HitInfo shadowHit;
 		// TO-DO: If not shadowed, perform shading using the Blinn model
-		color += mtl.k_d * lights[i].intensity;	// change this line
+        if (!IntersectRay(shadowHit, shadowRay) || shadowHit.t > lightDist) {
+            // Diffuse term (Lambert)
+            float diff = max(dot(normal, lightDir), 0.0);
+            vec3 diffuse = mtl.k_d * lights[i].intensity * diff;
+            // Specular term (Blinn-Phong)
+            vec3 halfVec = normalize(lightDir + view);
+            float spec = pow(max(dot(normal, halfVec), 0.0), mtl.n);
+            vec3 specular = mtl.k_s * lights[i].intensity * spec;
+            color += diffuse + specular;
+        }
 	}
 	return color;
 }
@@ -57,7 +72,28 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 	bool foundHit = false;
 	for ( int i=0; i<NUM_SPHERES; ++i ) {
 		// TO-DO: Test for ray-sphere intersection
+		vec3 oc = ray.pos - spheres[i].center;
+        float a = dot(ray.dir, ray.dir);
+        float b = 2.0 * dot(ray.dir, oc);
+        float c = dot(oc, oc) - spheres[i].radius * spheres[i].radius;
+        float discriminant = b * b - 4.0 * a * c;
+        if (discriminant > 0.0) {
+            float sqrtDisc = sqrt(discriminant);
+            float t1 = (-b - sqrtDisc) / (2.0 * a);
+            float t2 = (-b + sqrtDisc) / (2.0 * a);
+            float tCandidate = t1;                                 
+            if (tCandidate < 1e-4) {                                
+                tCandidate = t2;
+            }
 		// TO-DO: If intersection is found, update the given HitInfo
+			if (tCandidate > 1e-4 && tCandidate < hit.t) {
+				hit.t = tCandidate;
+				hit.position = ray.pos + ray.dir * hit.t;
+				hit.normal = normalize(hit.position - spheres[i].center);
+				hit.mtl = spheres[i].mtl;
+				foundHit = true;
+			}
+		}
 	}
 	return foundHit;
 }
@@ -81,10 +117,19 @@ vec4 RayTracer( Ray ray )
 			HitInfo h;	// reflection hit info
 			
 			// TO-DO: Initialize the reflection ray
+			r.pos = hit.position + hit.normal * 1e-4;
+            r.dir = reflect( ray.dir, hit.normal );
 			
 			if ( IntersectRay( h, r ) ) {
 				// TO-DO: Hit found, so shade the hit point
+				vec3 reflView = normalize( -r.dir );
+                vec3 reflColor = Shade( h.mtl, h.position, h.normal, reflView );
+                clr += k_s * reflColor;
+				
 				// TO-DO: Update the loop variables for tracing the next reflection ray
+				k_s *= h.mtl.k_s;
+                ray = r;
+                hit = h;
 			} else {
 				// The refleciton ray did not intersect with anything,
 				// so we are using the environment color
