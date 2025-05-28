@@ -38,11 +38,11 @@
   License: [CC Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 - **Hornet Model**  
-  [Bee by lam3d on Sketchfab](https://sketchfab.com/3d-models/bee-5d046a1e1c5141eabaff4c5c4ccc5d34)
+  [Bee by lam3d on Sketchfab](https://sketchfab.com/3d-models/bee-5d046a1e1c5141eabaff4c5c4ccc5d34)  
   License: [CC Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 - **Fly Swatter Model**  
-  [Modified: The handle was replaced with a cube using Blender.](https://sketchfab.com/3d-models/fly-swatter-1cbb42b179424bcc8d051e7363e3829d)
+  [Modified: The handle was replaced with a cube using Blender.](https://sketchfab.com/3d-models/fly-swatter-1cbb42b179424bcc8d051e7363e3829d)  
   License: [CC Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 All assets are used under their respective licenses and credited properly.
