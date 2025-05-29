@@ -1,3 +1,63 @@
+class RayTracer
+{
+	constructor()
+	{
+		this.sphere = new SphereProg;
+	}
+	initProg( vs, fs )
+	{
+		if ( this.prog ) gl.deleteProgram( this.prog );
+
+		const raytraceFS_head = raytraceFS_header + `
+			#define NUM_SPHERES ` + spheres.length + `
+			#define NUM_LIGHTS  ` + lights.length + `
+		`;
+		this.prog = InitShaderProgram( vs, raytraceFS_head+raytraceFS+fs );
+		if ( ! this.prog ) return;
+		
+		function setMaterial( prog, v, mtl )
+		{
+			gl.uniform3fv( gl.getUniformLocation( prog, v+'.k_d' ), mtl.k_d );
+			gl.uniform3fv( gl.getUniformLocation( prog, v+'.k_s' ), mtl.k_s );
+			gl.uniform1f ( gl.getUniformLocation( prog, v+'.n'   ), mtl.n   );
+		}
+		
+		gl.useProgram( this.prog );
+		for ( var i=0; i<spheres.length; ++i ) {
+			gl.uniform3fv( gl.getUniformLocation( this.prog, 'spheres['+i+'].center' ), spheres[i].center );
+			gl.uniform1f ( gl.getUniformLocation( this.prog, 'spheres['+i+'].radius' ), spheres[i].radius );
+			setMaterial( this.prog, 'spheres['+i+'].mtl', spheres[i].mtl );
+		}
+		for ( var i=0; i<lights.length; ++i ) {
+			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].position'  ), lights[i].position  );
+			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].intensity' ), lights[i].intensity );
+		}
+		this.updateProj();
+	}
+	updateProj()
+	{
+		if ( ! this.prog ) return;
+		gl.useProgram( this.prog );
+		var proj = gl.getUniformLocation( this.prog, 'proj' );
+		gl.uniformMatrix4fv( proj, false, perspectiveMatrix );
+	}
+	init()
+	{
+		this.initProg( document.getElementById('sphereVS').text, raytraceFS_secondary );
+		if ( ! this.prog ) return;
+		this.sphere.prog = this.prog;
+		this.sphere.init();
+	}
+	draw( mvp, trans )
+	{
+		if ( ! this.prog ) return;
+		background.draw( trans );
+		this.sphere.setTrans( mvp, [ trans.camToWorld[12], trans.camToWorld[13], trans.camToWorld[14] ] );
+		spheres.forEach( s => this.sphere.draw(s) );
+	}
+};
+
+
 var raytraceFS = `
 struct Ray {
 	vec3 pos;
