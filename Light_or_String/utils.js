@@ -87,3 +87,62 @@ var screenQuad = {
 	}
 };
 
+function updateDraggedProjectile(mouse) {
+	const rect = canvas.getBoundingClientRect();
+	const x = (mouse[0] - rect.left) / rect.width * 2 - 1;
+	const y = (mouse[1] - rect.top) / rect.height * -2 + 1;
+
+	// Define an ellipse in camera space and map mouse to it
+	const ellipseX = 0.5 * x;  // X-axis
+	const ellipseY = 0.3 * y;  // Y-axis
+	const ellipseZ = -0.4 * (1 - x * x - y * y);  // inward (camera view dir)
+
+	const camSpacePos = [ellipseX, ellipseY, ellipseZ, 1];
+
+	// Convert camera space to world space using camToWorld
+	const trans = GetTrans();
+	const c2w = trans.camToWorld;
+	const worldPos = [
+		c2w[0]*camSpacePos[0] + c2w[4]*camSpacePos[1] + c2w[8]*camSpacePos[2] + c2w[12],
+		c2w[1]*camSpacePos[0] + c2w[5]*camSpacePos[1] + c2w[9]*camSpacePos[2] + c2w[13],
+		c2w[2]*camSpacePos[0] + c2w[6]*camSpacePos[1] + c2w[10]*camSpacePos[2] + c2w[14],
+	];
+
+	// Move the projectile to the dragged position
+	if (projectile && !projectile.active) {
+		projectile.position = worldPos;
+	}
+}
+
+function WorldToViewDepth(pointWorld) {
+	const trans = GetTrans();
+	const worldToCam = trans.worldToCam;
+
+	// Multiply world point by worldToCam matrix
+	const x = pointWorld[0], y = pointWorld[1], z = pointWorld[2];
+	const cx = worldToCam[0]*x + worldToCam[4]*y + worldToCam[8]*z + worldToCam[12];
+	const cy = worldToCam[1]*x + worldToCam[5]*y + worldToCam[9]*z + worldToCam[13];
+	const cz = worldToCam[2]*x + worldToCam[6]*y + worldToCam[10]*z + worldToCam[14];
+	return -cz; // distance from camera
+}
+function WorldToScreen(pointWorld) {
+	const trans = GetTrans();
+	const worldToCam = trans.worldToCam;
+
+	const x = pointWorld[0], y = pointWorld[1], z = pointWorld[2];
+	const cx = worldToCam[0]*x + worldToCam[4]*y + worldToCam[8]*z + worldToCam[12];
+	const cy = worldToCam[1]*x + worldToCam[5]*y + worldToCam[9]*z + worldToCam[13];
+	const cz = worldToCam[2]*x + worldToCam[6]*y + worldToCam[10]*z + worldToCam[14];
+
+	const clipX = perspectiveMatrix[0]*cx + perspectiveMatrix[8]*cz;
+	const clipY = perspectiveMatrix[5]*cy + perspectiveMatrix[9]*cz;
+	const clipW = -cz;
+
+	const ndcX = clipX / clipW;
+	const ndcY = clipY / clipW;
+
+	const screenX = (ndcX + 1) / 2 * canvas.width;
+	const screenY = (1 - ndcY) / 2 * canvas.height;
+
+	return [screenX, screenY];
+}

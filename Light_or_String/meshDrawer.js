@@ -1,191 +1,239 @@
-function LoadObjModel(input) {
-	if (input.files && input.files[0]) {
-		const reader = new FileReader();
-		reader.onload = function (e) {
-			const obj = new ObjMesh();
-			obj.parse(e.target.result);
+// This function takes the translation and two rotation angles (in radians) as input arguments.
+// The two rotations are applied around x and y axes.
+// It returns the combined 4x4 transformation matrix as an array in column-major order.
+// You can use the MatrixMult function defined in project5.html to multiply two 4x4 matrices in the same format.
+function GetModelViewMatrix( tx, ty, tz, rotX, rotY ) {
+    // build rotation around X
+    const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+    const rotMatX = [
+        1,    0,     0, 0,
+        0, cosX,  sinX, 0,
+        0,-sinX,  cosX, 0,
+        0,    0,     0, 1
+    ];
+    // build rotation around Y
+    const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+    const rotMatY = [
+       cosY, 0, -sinY, 0,
+          0, 1,     0, 0,
+       sinY, 0,  cosY, 0,
+          0, 0,     0, 1
+    ];
+    // combine rotations: first X then Y
+    const rotCombined = MatrixMult(rotMatY, rotMatX);
 
-			const box = obj.getBoundingBox();
-			const shift = [
-				-(box.min[0] + box.max[0]) / 2,
-				-(box.min[1] + box.max[1]) / 2,
-				-(box.min[2] + box.max[2]) / 2,
-			];
-			const size = [
-				(box.max[0] - box.min[0]) / 2,
-				(box.max[1] - box.min[1]) / 2,
-				(box.max[2] - box.min[2]) / 2,
-			];
-			const scale = 1 / Math.max(...size);
-			obj.shiftAndScale(shift, scale);
+    // translation matrix
+    const transMat = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+       tx,ty,tz, 1
+    ];
 
-			// Swap Y-Z to match coordinate system
-			for (let i = 0; i < obj.vpos.length; ++i) {
-				let temp = obj.vpos[i][1];
-				obj.vpos[i][1] = obj.vpos[i][2];
-				obj.vpos[i][2] = temp;
-			}
-
-			const buffers = obj.getVertexBuffers();
-			meshDrawer.setMesh(buffers.positionBuffer, buffers.texCoordBuffer, buffers.normalBuffer);
-
-			// Load and apply texture
-			const img = new Image();
-			img.onload = function () {
-				meshDrawer.setTexture(img);
-				DrawScene();
-			};
-			img.src = 'hornet/hornet_color.png';  // use correct path or URL here
-		};
-		reader.readAsText(input.files[0]);
-	}
+    // apply translation after rotation
+    const mv = MatrixMult(transMat, rotCombined);
+    return mv;
 }
 
-class MeshDrawer {
-	constructor() {
-		this.prog = InitShaderProgram(this._vertSource(), this._fragSource());
-		this.mvpLoc = gl.getUniformLocation(this.prog, 'mvp');
-		this.mvLoc = gl.getUniformLocation(this.prog, 'mv');
-		this.normalMatLoc = gl.getUniformLocation(this.prog, 'normalMat');
-		this.lightDirLoc = gl.getUniformLocation(this.prog, 'lightDir');
-		this.shininessLoc = gl.getUniformLocation(this.prog, 'shininess');
-		this.showTexLoc = gl.getUniformLocation(this.prog, 'showTexture');
-		this.swapYZLoc = gl.getUniformLocation(this.prog, 'swapYZ');
-		this.textureIDLoc = gl.getUniformLocation(this.prog, 'textureID');
 
-		this.showTex = true;
-		this.swapYZFlag = true;
-		this.meshReady = false;
-		this.textureReady = false;
+// [TO-DO] Complete the implementation of the following class.
+
+class MeshDrawer
+{
+	// The constructor is a good place for taking care of the necessary initializations.
+	constructor()
+	{
+        this.gl = gl
+        this.gl.clearColor(0, 0, 0, 0);
+        this.gl.enable(this.gl.DEPTH_TEST);
+        // compile & link shaders
+        const vShader = this._compileShader(this._vertSource(), this.gl.VERTEX_SHADER);
+        const fShader = this._compileShader(this._fragSource(), this.gl.FRAGMENT_SHADER);
+        this.program = this.gl.createProgram();
+        this.gl.attachShader(this.program, vShader);
+        this.gl.attachShader(this.program, fShader);
+        this.gl.linkProgram(this.program);
+        if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+            console.error(this.gl.getProgramInfoLog(this.program));
+        }
+        this.meshReady = false;
+        this.textureReady = false;
+        this.showTex   = true;
 	}
-
-	setMesh(vertPos, texCoords, normals) {
-		this.numVertices = vertPos.length / 3;
+	
+	// This method is called every time the user opens an OBJ file.
+	// The arguments of this function is an array of 3D vertex positions,
+	// an array of 2D texture coordinates, and an array of vertex normals.
+	// Every item in these arrays is a floating point value, representing one
+	// coordinate of the vertex position or texture coordinate.
+	// Every three consecutive elements in the vertPos array forms one vertex
+	// position and every three consecutive vertex positions form a triangle.
+	// Similarly, every two consecutive elements in the texCoords array
+	// form the texture coordinate of a vertex and every three consecutive 
+	// elements in the normals array form a vertex normal.
+	// Note that this method can be called multiple times.
+	setMesh( vertPos, texCoords, normals )
+	{
+		// [TO-DO] Update the contents of the vertex buffer objects.
+		this.numTriangles = vertPos.length / 3;
 		this._createBuffer('pos', vertPos, 3);
 		this._createBuffer('uv', texCoords, 2);
 		this._createBuffer('normal', normals, 3);
 		this.meshReady = true;
 	}
-
-	setTexture(img) {
-		this.texture = gl.createTexture();
-		gl.bindTexture(gl.TEXTURE_2D, this.texture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
-		gl.generateMipmap(gl.TEXTURE_2D);
-		this.textureReady = true;
+	
+	// This method is called when the user changes the state of the
+	// "Swap Y-Z Axes" checkbox. 
+	// The argument is a boolean that indicates if the checkbox is checked.
+	swapYZ( swap )
+	{
+		// [TO-DO] Set the uniform parameter(s) of the vertex shader
+		this.gl.useProgram(this.program);
+        const loc = this.gl.getUniformLocation(this.program, "swapYZ");
+        this.gl.uniform1i(loc, swap);
 	}
-
-	showTexture(show) {
-		this.showTex = show;
-	}
-
-	swapYZ(swap) {
-		this.swapYZFlag = swap;
-	}
-
-	setLightDir(x, y, z) {
-		this.lightDir = [x, y, z];
-	}
-
-	setShininess(sh) {
-		this.shininess = sh;
-	}
-
-	draw(mvp, mv = mvp, normalMat = [
-		mv[0], mv[1], mv[2],
-		mv[4], mv[5], mv[6],
-		mv[8], mv[9], mv[10]
-	]) {
+	
+	// This method is called to draw the triangular mesh.
+	// The arguments are the model-view-projection transformation matrixMVP,
+	// the model-view transformation matrixMV, the same matrix returned
+	// by the GetModelViewProjection function above, and the normal
+	// transformation matrix, which is the inverse-transpose of matrixMV.
+	draw( matrixMVP, matrixMV, matrixNormal )
+	{
+		// [TO-DO] Complete the WebGL initializations before drawing
 		if (!this.meshReady) return;
 
-		gl.useProgram(this.prog);
-		gl.uniformMatrix4fv(this.mvpLoc, false, mvp);
-		gl.uniformMatrix4fv(this.mvLoc, false, mv);
-		gl.uniformMatrix3fv(this.normalMatLoc, false, normalMat);
-		gl.uniform3fv(this.lightDirLoc, this.lightDir || [0, 0, 1]);
-		gl.uniform1f(this.shininessLoc, this.shininess || 32);
-		gl.uniform1i(this.showTexLoc, this.showTex);
-		gl.uniform1i(this.swapYZLoc, this.swapYZFlag);
+        this.gl.useProgram(this.program);
 
-		if (this.textureReady) {
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, this.texture);
-			gl.uniform1i(this.textureIDLoc, 0);
-		}
+        // attributes are already bound in setMesh(); just re-enable
+        ["pos","uv","normal"].forEach(name => {
+            const loc = this.gl.getAttribLocation(this.program, name);
+            this.gl.enableVertexAttribArray(loc);
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this[name + "Buffer"]);
+            const size = (name==="uv"?2:3);
+            this.gl.vertexAttribPointer(loc, size, this.gl.FLOAT, false, 0, 0);
+        });
 
-		this._bindBuffer('pos', 3);
-		this._bindBuffer('uv', 2);
-		this._bindBuffer('normal', 3);
+        // set uniforms
+        const uMVP = this.gl.getUniformLocation(this.program, "mvp");
+        this.gl.uniformMatrix4fv(uMVP, false, matrixMVP);
+        const uMV  = this.gl.getUniformLocation(this.program, "mv");
+        this.gl.uniformMatrix4fv(uMV,  false, matrixMV);
+        const uNorm= this.gl.getUniformLocation(this.program, "normalMat");
+        this.gl.uniformMatrix3fv(uNorm,false, matrixNormal);
 
-		gl.drawArrays(gl.TRIANGLES, 0, this.numVertices);
+	if (this.textureReady && this.tex) {
+		this.gl.activeTexture(this.gl.TEXTURE0);
+		this.gl.bindTexture(this.gl.TEXTURE_2D, this.tex);
+		const samplerLoc = this.gl.getUniformLocation(this.program, "textureID");
+		this.gl.uniform1i(samplerLoc, 0);
 	}
 
-	_createBuffer(name, data, size) {
-		const buffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
-		this[name + 'Buffer'] = { buffer, size };
+	const showLoc = this.gl.getUniformLocation(this.program, "showTexture");
+	this.gl.uniform1i(showLoc, this.showTex ? 1 : 0);
+    
+		this.gl.drawArrays(this.gl.TRIANGLES, 0, this.numTriangles );
 	}
+	
+	// This method is called to set the texture of the mesh.
+	// The argument is an HTML IMG element containing the texture data.
+	setTexture( img )
+	{
+		// [TO-DO] Bind the texture
+        this.tex = this.gl.createTexture();
+        this.gl.useProgram(this.program);
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.tex);
+		// You can set the texture image data using the following command.
+		this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB, this.gl.RGB, this.gl.UNSIGNED_BYTE, img );
+		this.gl.generateMipmap(this.gl.TEXTURE_2D);
 
-	_bindBuffer(name, size) {
-		const loc = gl.getAttribLocation(this.prog, name);
-		if (loc < 0 || !this[name + 'Buffer']) return;
-		gl.bindBuffer(gl.ARRAY_BUFFER, this[name + 'Buffer'].buffer);
-		gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(loc);
+		// [TO-DO] Now that we have a texture, it might be a good idea to set
+		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
+		const samplerLoc = this.gl.getUniformLocation(this.program, "textureID");
+        this.gl.uniform1i(samplerLoc, 0);
+
+        this.textureReady = true;
+        if (this.showTex) this.showTexture(true);
 	}
+	
+	// This method is called when the user changes the state of the
+	// "Show Texture" checkbox. 
+	// The argument is a boolean that indicates if the checkbox is checked.
+	showTexture( show )
+	{
+		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify if it should use the texture.
+        this.showTex = show;
+        this.gl.useProgram(this.program);
+        const loc = this.gl.getUniformLocation(this.program, "showTexture");
+        this.gl.uniform1i(loc, show);
+	}
+	
+	// This method is called to set the incoming light direction
+	setLightDir( x, y, z )
+	{
+		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the light direction.
+        this.gl.useProgram(this.program);
+        const loc = this.gl.getUniformLocation(this.program, "lightDir");
+        this.gl.uniform3fv(loc, [x, y, z]);
+	}
+	
+	// This method is called to set the shininess of the material
+	setShininess( shininess )
+	{
+		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the shininess.
+		this.gl.useProgram(this.program);
+        const loc = this.gl.getUniformLocation(this.program, "shininess");
+        this.gl.uniform1f(loc, shininess);
+	}
+	
+	//utils
+    _createBuffer(attrName, dataArray, numComp) {
+        const buf = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buf);
+        this.gl.bufferData(
+            this.gl.ARRAY_BUFFER,
+            new Float32Array(dataArray),
+            this.gl.STATIC_DRAW
+        );
+        this[attrName + "Buffer"] = buf;
+    }
 
-	_vertSource() {
-		return `
+    _compileShader(src, type) {
+        const sh = this.gl.createShader(type);
+        this.gl.shaderSource(sh, src);
+        this.gl.compileShader(sh);
+        if (!this.gl.getShaderParameter(sh, this.gl.COMPILE_STATUS)) {
+            console.error(this.gl.getShaderInfoLog(sh));
+        }
+        return sh;
+    }
+
+    _vertSource() {
+        return `
+			precision mediump float;
 			attribute vec3 pos;
-			attribute vec3 normal;
 			attribute vec2 uv;
+			varying vec2 vUV;
 			uniform bool swapYZ;
 			uniform mat4 mvp;
-			uniform mat4 mv;
-			uniform mat3 normalMat;
-			varying vec2 vUV;
-			varying vec3 vNormal;
-			varying vec3 vViewDir;
 			void main() {
-				vec4 p = vec4(pos,1);
-				if (swapYZ) p = vec4(p.x, p.z, p.y, 1);
-				gl_Position = mvp * p;
+				vec3 p = swapYZ ? vec3(pos.x, pos.z, pos.y) : pos;
+				gl_Position = mvp * vec4(p, 1.0);
 				vUV = uv;
-				vNormal = normalMat * normal;
-				vViewDir = -(mv * vec4(pos,1)).xyz;
 			}
 		`;
-	}
+    }
 
-	_fragSource() {
-		return `
+    _fragSource() {
+        return `
 			precision mediump float;
 			varying vec2 vUV;
-			varying vec3 vNormal;
-			varying vec3 vViewDir;
 			uniform sampler2D textureID;
 			uniform bool showTexture;
-			uniform vec3 lightDir;
-			uniform float shininess;
-			const float ambient = 0.1;
-			const vec3 Kd = vec3(1);
-			const vec3 Ks = vec3(1);
-			const vec3 L = vec3(1);
 			void main() {
-				vec3 N = normalize(vNormal);
-				vec3 W = normalize(lightDir);
-				vec3 V = normalize(vViewDir);
-				vec3 H = normalize(W + V);
-				float diff = max(dot(W,N),0.0);
-				float spec = pow(max(dot(H,N),0.0), shininess);
-				if (showTexture) {
-					vec3 texCol = texture2D(textureID, vUV).xyz;
-					gl_FragColor = vec4(L * (texCol * diff + Ks * spec), 1);
-				} else {
-					gl_FragColor = vec4(L * (Kd * diff + Ks * spec), 1);
-				}
-			}
-		`;
-	}
+				if (showTexture) gl_FragColor = texture2D(textureID, vUV);
+				else gl_FragColor = vec4(1.0, gl_FragCoord.z * gl_FragCoord.z, 0.0, 1.0);
+			}`
+    }
 }

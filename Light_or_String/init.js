@@ -1,7 +1,36 @@
-function InitScene()
-{
-	ray_tracer.init();
+function InitScene(fireflyCount = 10, hornetCount = 10) {
+	window.flyingManager = new FlyingManager();
+	
+	fireflyHighData = 'firefly/firefly_high.obj';
+	fireflyLowData = 'firefly/firefly_low.obj';
+	
+	hornetHighData = 'hornet/hornet_high.obj';
+	hornetLowData = 'hornet/hornet_low.obj';
+	
+	for (let i = 0; i < fireflyCount; i++) {
+		const firefly = new FlyingObject(fireflyLowData, fireflyHighData, gl, [3.20344, 3.566142, 2.037548], [-3.204121, 1.347797, -1.995025]);
+		Promise.all([
+			firefly.setMeshFromFile(fireflyLowData, 'low',),
+			firefly.setMeshFromFile(fireflyHighData, 'high')
+		]).then(() => {
+			flyingManager.addFirefly(firefly);
+			DrawScene();
+		});
+	}
+
+	for (let i = 0; i < hornetCount; i++) {
+		const hornet = new FlyingObject(hornetLowData, hornetHighData, gl, [2, 5.0, -0.32], [-2, 0.5, -5.0]);
+		Promise.all([
+			hornet.setMeshFromFile(hornetLowData, 'low'),
+			hornet.setMeshFromFile(hornetHighData, 'high')
+		]).then(() => {
+			flyingManager.addHornet(hornet);
+			DrawScene();
+		});
+	}
+	flyingManager.draw()
 }
+
 
 function InitEnvironmentMap()
 {
@@ -72,7 +101,6 @@ function InitWebGL()
 	meshDrawer = new MeshDrawer();
 
 	UpdateCanvasSize();
-	InitScene();
 }
 
 // Called every time the window size is changed.

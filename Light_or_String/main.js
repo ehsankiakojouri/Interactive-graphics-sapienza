@@ -1,6 +1,13 @@
 const transZmin = 1.001;
 const transZmax = 10;
 
+let isDragging = false;
+let dragStart = null;
+let dragCurrent = null;
+let dragDepth = 3.0;
+let dragOffset = [0, 0];
+
+let projectile;
 var sphereDrawer;
 var canvas, gl;
 var perspectiveMatrix;	// perspective projection matrix
@@ -43,8 +50,8 @@ var spheres = fixed_spheres.slice();
 
 var lights = [
 	{
-		position:  [ 0, 0, 1000 ],
-		intensity: [ 1, 1, 1 ]
+		position:  [ 100000, 100000, 100000 ],
+		intensity: [ 5, 5, 5 ]
 	}
 ];
 
@@ -88,6 +95,20 @@ const raytraceFS_secondary = `
 	}
 `;
 
+let lastFrameTime = null;
+function AnimateScene(now) {
+    if (!window.flyingManager) return;
+    if (!lastFrameTime) lastFrameTime = now;
+    const dt = (now - lastFrameTime) / 1000.0;
+    lastFrameTime = now;
+
+
+    window.flyingManager.update(dt);
+	projectile.update(dt);
+    DrawScene();
+    requestAnimationFrame(AnimateScene);
+}
+
 document.addEventListener("keydown", keyDownTextField, false);
 function keyDownTextField(e) {
 	var keyCode = e.keyCode;
@@ -109,21 +130,32 @@ function keyDownTextField(e) {
 
 
 // This is the main function that handled WebGL drawing
-function DrawScene()
-{
+function DrawScene() {
 	gl.flush();
-	
-	var trans = GetTrans();
-	var mvp = MatrixMult( perspectiveMatrix, trans.worldToCam );
 
-	// Clear the screen and the depth buffer.
-	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
-	
-	// Rasterization + Ray Tracing
-	ray_tracer.draw( mvp, trans );
-	
-	meshDrawer.draw(mvp);
+	const trans = GetTrans();
+	const mvp = MatrixMult(perspectiveMatrix, trans.worldToCam);
+	const mv = trans.worldToCam;
+	const normalMat = [1, 0, 0, 0, 1, 0, 0, 0, 1]; // or compute from mv if lighting is directional
+
+	// Clear screen once
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+	// 1. Draw background (sky/environment cube map)
+	background.draw(trans);
+
+	// 2. Draw raytraced spheres (like the floor)
+	ray_tracer.draw(mvp, trans);
+
+	// 3. Draw animated meshes (fireflies and hornets)
+	if (window.flyingManager) {
+		window.flyingManager.draw(mvp, mv, normalMat);
+	}
+	projectile.draw(mvp, mv, normalMat);
+
 }
+
+
 
 function WindowResize()
 {
@@ -153,7 +185,42 @@ function NewScene()
 				canvas.zoom(5*(event.clientY - cy));
 				cy = event.clientY;
 			}
-		} else {
+		} else if ( event.shiftKey ) {
+
+isDragging = true;
+dragStart = [event.clientX, event.clientY];
+dragDepth = WorldToViewDepth(projectile.position);
+
+const slimeScreen = WorldToScreen(projectile.position);
+dragOffset = [
+	event.clientX - slimeScreen[0],
+	event.clientY - slimeScreen[1]
+];
+
+
+canvas.onmousemove = function(event) {
+	// Dragging code using dragDepth instead of fixed 3.0
+	const correctedX = event.clientX - dragOffset[0];
+	const correctedY = event.clientY - dragOffset[1];
+
+	const mouseX = (correctedX / canvas.width) * 2 - 1;
+	const mouseY = 1 - (correctedY / canvas.height) * 2;
+
+	const trans = GetTrans();
+	const invProjView = trans.camToWorld;
+
+	const ndc = [mouseX * dragDepth, mouseY * dragDepth, -dragDepth, 1];
+	const p = [
+		invProjView[0]*ndc[0] + invProjView[4]*ndc[1] + invProjView[8]*ndc[2] + invProjView[12],
+		invProjView[1]*ndc[0] + invProjView[5]*ndc[1] + invProjView[9]*ndc[2] + invProjView[13],
+		invProjView[2]*ndc[0] + invProjView[6]*ndc[1] + invProjView[10]*ndc[2] + invProjView[14]
+	];
+
+	projectile.position = p;
+};
+
+
+	 	} else {
 			canvas.onmousemove = function() {
 				viewRotZ += (cx - event.clientX)/canvas.width*5;
 				viewRotX -= (cy - event.clientY)/canvas.height*5;
@@ -168,9 +235,19 @@ function NewScene()
 		}
 	}
 	canvas.onmouseup = canvas.onmouseleave = function() {
-		canvas.onmousemove = null;
+		if (isDragging) {
+			isDragging = false;
+			// (launching logic comes later)
+	dragStart = null;
+		}
+		canvas.onmousemove = null;	
 	}
-	
+
+	const fireflyCount = parseInt(document.getElementById("firefly-input").value);
+	const hornetCount = parseInt(document.getElementById("hornet-input").value);
 	ray_tracer.init();
+	InitScene(fireflyCount, hornetCount); 
+	projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
+	requestAnimationFrame(AnimateScene);
 	DrawScene();
 }
