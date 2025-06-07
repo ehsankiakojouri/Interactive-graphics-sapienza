@@ -2,39 +2,48 @@
 // The two rotations are applied around x and y axes.
 // It returns the combined 4x4 transformation matrix as an array in column-major order.
 // You can use the MatrixMult function defined in project5.html to multiply two 4x4 matrices in the same format.
-function GetModelViewMatrix( tx, ty, tz, rotX, rotY ) {
-    // build rotation around X
+function GetModelViewMatrix(tx, ty, tz, rotX, rotY, rotZ = -Math.PI / 2) {
+    // --- rotation around X
     const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
     const rotMatX = [
-        1,    0,     0, 0,
+        1, 0,     0,    0,
         0, cosX,  sinX, 0,
         0,-sinX,  cosX, 0,
-        0,    0,     0, 1
+        0, 0,     0,    1
     ];
-    // build rotation around Y
+
+    // --- rotation around Y
     const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
     const rotMatY = [
-       cosY, 0, -sinY, 0,
-          0, 1,     0, 0,
-       sinY, 0,  cosY, 0,
-          0, 0,     0, 1
+        cosY, 0, -sinY, 0,
+        0,    1,  0,    0,
+        sinY, 0,  cosY, 0,
+        0,    0,  0,    1
     ];
-    // combine rotations: first X then Y
-    const rotCombined = MatrixMult(rotMatY, rotMatX);
 
-    // translation matrix
+    // --- rotation around Z  (new)
+    const cosZ = Math.cos(rotZ), sinZ = Math.sin(rotZ);
+    const rotMatZ = [
+         cosZ, sinZ, 0, 0,
+        -sinZ, cosZ, 0, 0,
+            0,    0, 1, 0,
+            0,    0, 0, 1
+    ];
+
+    // combine: X ▶ Y ▶ Z   (order is up to you)
+    const rotCombined = MatrixMult(rotMatZ, MatrixMult(rotMatY, rotMatX));
+
+    // translation
     const transMat = [
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
-       tx,ty,tz, 1
+        tx,ty,tz, 1
     ];
 
-    // apply translation after rotation
-    const mv = MatrixMult(transMat, rotCombined);
-    return mv;
+    // translation after rotation
+    return MatrixMult(transMat, rotCombined);
 }
-
 
 // [TO-DO] Complete the implementation of the following class.
 

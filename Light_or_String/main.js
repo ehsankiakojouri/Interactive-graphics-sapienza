@@ -16,6 +16,43 @@ var viewRotX=0, viewRotZ=0, transZ=3;
 var sphereCount = 0;
 var ray_tracer;
 
+class Slingshot {
+	constructor(gl, meshPath, texturePath) {
+		this.drawer = new MeshDrawer(gl);
+		this.position = [0, 0, 0];
+		this.rotation = [0, 0]; // if needed
+
+		// Load mesh
+		fetch(meshPath)
+			.then(res => res.text())
+			.then(obj => {
+				const mesh = new ObjMesh();
+				mesh.parse(obj);
+				mesh.shiftAndScale([0, 0, 0], 0.4); // scale and position
+				mesh.computeNormals();
+				const vbufs = mesh.getVertexBuffers();
+				this.drawer.setMesh(vbufs.positionBuffer, vbufs.texCoordBuffer, vbufs.normalBuffer);
+				this.drawer.swapYZ(true);
+			});
+
+		// Load texture
+		const img = new Image();
+		img.onload = () => this.drawer.setTexture(img);
+		img.src = texturePath;
+		this.drawer.showTexture(true);
+	}
+
+	draw(mvp, mv, normalMat) {
+		const tx = this.position[0];
+		const ty = this.position[1];
+		const tz = this.position[2];
+		const localMV = GetModelViewMatrix(tx, ty, tz, this.rotation[0], this.rotation[1]);
+		const combinedMVP = MatrixMult(mvp, localMV);
+		this.drawer.draw(combinedMVP, localMV, normalMat);
+	}
+}
+
+
 var background = {
 	init()
 	{
@@ -48,12 +85,6 @@ var fixed_spheres = [
 
 var spheres = fixed_spheres.slice();
 
-var lights = [
-	{
-		position:  [ 100000, 100000, 100000 ],
-		intensity: [ 5, 5, 5 ]
-	}
-];
 
 const raytraceFS_header = `
 	precision highp float;
@@ -103,7 +134,7 @@ function AnimateScene(now) {
     lastFrameTime = now;
 
 
-    window.flyingManager.update(dt);
+    window.flyingManager.update(dt, lights);
 	projectile.update(dt);
     DrawScene();
     requestAnimationFrame(AnimateScene);

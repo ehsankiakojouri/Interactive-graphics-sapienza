@@ -8,18 +8,24 @@ function InitScene(fireflyCount = 10, hornetCount = 10) {
 	hornetLowData = 'hornet/hornet_low.obj';
 	
 	for (let i = 0; i < fireflyCount; i++) {
-		const firefly = new FlyingObject(fireflyLowData, fireflyHighData, gl, [3.20344, 3.566142, 2.037548], [-3.204121, 1.347797, -1.995025]);
+		const firefly = new FlyingObject(fireflyLowData, fireflyHighData, gl, max_flight_box, min_flight_box, [3.20344, 3.566142, 2.037548], [-3.204121, 1.347797, -1.995025]);
+		firefly.isFirefly = true; // Mark as firefly for special handling
 		Promise.all([
 			firefly.setMeshFromFile(fireflyLowData, 'low',),
 			firefly.setMeshFromFile(fireflyHighData, 'high')
 		]).then(() => {
-			flyingManager.addFirefly(firefly);
+			light_pos = flyingManager.addFirefly(firefly);
+			lights.push({
+				position: light_pos,
+				intensity: [2.0, 2.0, 2.0]
+				// intensity: [1.0, 1.0, 0.77]
+				});
 			DrawScene();
 		});
 	}
 
 	for (let i = 0; i < hornetCount; i++) {
-		const hornet = new FlyingObject(hornetLowData, hornetHighData, gl, [2, 5.0, -0.32], [-2, 0.5, -5.0]);
+		const hornet = new FlyingObject(hornetLowData, hornetHighData, gl, max_flight_box, min_flight_box, [2, 5.0, -0.32], [-2, 0.5, -5.0]);
 		Promise.all([
 			hornet.setMeshFromFile(hornetLowData, 'low'),
 			hornet.setMeshFromFile(hornetHighData, 'high')
@@ -170,4 +176,12 @@ function GetTrans()
 		c[0], c[1], c[2], 1
 	];
 	return { camToWorld:camToWorld, worldToCam:worldToCam };
+}
+function mulberry32(a){
+    return function() {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
 }

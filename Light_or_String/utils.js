@@ -1,3 +1,12 @@
+var lights = [
+	{
+		position:  [ 100000, 100000, 100000 ],
+		intensity: [ 2, 2, 2 ]
+	}
+];
+const box_bound = 8;
+const max_flight_box = [ box_bound, box_bound, box_bound ];
+const min_flight_box = [ -box_bound, 0, 0 ];
 // This is a helper function for compiling the given vertex and fragment shader script ids into a program.
 function InitShaderProgramFromScripts( vs, fs )
 {
@@ -145,4 +154,29 @@ function WorldToScreen(pointWorld) {
 	const screenY = (1 - ndcY) / 2 * canvas.height;
 
 	return [screenX, screenY];
+}
+function rotationMatrixFromEuler(phi, theta, psi) {
+	const cphi = Math.cos(phi), sphi = Math.sin(phi);
+	const ctheta = Math.cos(theta), stheta = Math.sin(theta);
+	const cpsi = Math.cos(psi), spsi = Math.sin(psi);
+
+	return [
+		[ctheta * cpsi, cpsi * stheta * sphi - spsi * cphi, cpsi * stheta * cphi + spsi * sphi],
+		[ctheta * spsi, spsi * stheta * sphi + cpsi * cphi, spsi * stheta * cphi - cpsi * sphi],
+		[-stheta,       ctheta * sphi,                     ctheta * cphi]
+	];
+}
+function eulerRatesFromBodyRates(phi, theta, p, q, r) {
+	const tanTheta = Math.tan(theta);
+	const secTheta = 1 / Math.cos(theta);
+	const sinPhi = Math.sin(phi), cosPhi = Math.cos(phi);
+
+	const phi_dot = p + q * sinPhi * tanTheta + r * cosPhi * tanTheta;
+	const theta_dot = q * cosPhi - r * sinPhi;
+	const psi_dot = q * sinPhi * secTheta + r * cosPhi * secTheta;
+
+	return [phi_dot, theta_dot, psi_dot];
+}
+function randBetween(min, max) {
+    return min + Math.random() * (max - min);
 }

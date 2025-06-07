@@ -1,18 +1,32 @@
 class FlyingObject {
-	constructor(max_boxlowObjMesh, highObjMesh, gl, max_box, min_box) {
+	constructor(lowObjMesh, highObjMesh, gl, max_flight_box, min_flight_box, max_obj_box, min_obj_box) {
+		this.max_flight_box = max_flight_box; // bounding box for flight
+		this.min_flight_box = min_flight_box;
+		this.timer = 0;
+		this.max_obj_box = max_obj_box;
+		this.min_obj_box = min_obj_box;
+		this.isFirefly = false; // default to hornet
 		this.lowDrawer = new MeshDrawer(gl);
 		this.highDrawer = new MeshDrawer(gl);
 		this.current = this.lowDrawer;
 		this.position = this.getRandomPosition();
-		this.timer = 0;
-		this.max_box = max_box;
-		this.min_box = min_box;
+
+		    // --- flight brain ---
+		this.seed   = performance.now() ^ Math.floor(Math.random()*1e9); // deterministic per object
+		this.rand   = mulberry32(this.seed);          // fast PRNG, see helper below
+		this.target = this.getRandomPosition();       // current waypoint
+		this.vel    = [0, 0, 0];                      // current velocity
+		this.speed  = this.isFirefly ? 1.2 : 4.0;     // base speed (m/s)
+		this.wobbleAmp = this.isFirefly ? 0.10 : 0.03;// “buzziness”
+
+
 	}
+
 	getRandomPosition() {
 		return [
-			(Math.random() - 0.5) * 50, // spread in x
-			Math.random() * 25, // spread in x
-			(Math.random() - 0.5) * 50  // spread in z
+			randBetween(this.min_flight_box[0], this.max_flight_box[0]),
+			randBetween(this.min_flight_box[1], this.max_flight_box[1]), 
+			randBetween(this.min_flight_box[2], this.max_flight_box[2]) 
 		];
 	}
 
@@ -23,14 +37,14 @@ class FlyingObject {
 				const mesh = new ObjMesh();
 				mesh.parse(objdata);
 				const shift = [
-					(-(this.min_box[0] + this.max_box[0]) / 3) + this.position[0],
-					(-(this.min_box[1] + this.max_box[1]) / 3) + this.position[1],
-					(-(this.min_box[2] + this.max_box[2]) / 3) + this.position[2]
+					(-(this.min_obj_box[0] + this.max_obj_box[0]) / 3) + this.position[0],
+					(-(this.min_obj_box[1] + this.max_obj_box[1]) / 3) + this.position[1],
+					(-(this.min_obj_box[2] + this.max_obj_box[2]) / 3) + this.position[2]
 				];
 				const size = [
-					(this.max_box[0] - this.min_box[0]) / 3,
-					(this.max_box[1] - this.min_box[1]) / 3,
-					(this.max_box[2] - this.min_box[2]) / 3
+					(this.max_obj_box[0] - this.min_obj_box[0]) / 3,
+					(this.max_obj_box[1] - this.min_obj_box[1]) / 3,
+					(this.max_obj_box[2] - this.min_obj_box[2]) / 3
 				];
 				const maxSize = Math.max(...size);
 				const scale = 0.3 / maxSize;
@@ -51,13 +65,79 @@ class FlyingObject {
 	setPosition(pos) {
 		this.position = pos;
 	}
+update(dt, light_id) {
+    this.timer += dt;
 
-	update(dt) {
-		this.timer += dt;
-		const useHigh = Math.floor(this.timer * 30) % 2 === 0;
-		this.current = useHigh ? this.highDrawer : this.lowDrawer;
-	}
-	
+    /* mesh LOD swap – unchanged */
+    const useHigh = Math.floor(this.timer * 30) % 2 === 0;
+    this.current  = useHigh ? this.highDrawer : this.lowDrawer;
+
+    /* -------- flight logic -------- */
+    // 3-A: steer toward the current waypoint
+    const dir = [
+        this.target[0] - this.position[0],
+        this.target[1] - this.position[1],
+        this.target[2] - this.position[2]
+    ];
+    const dist = Math.hypot(...dir);
+    if (dist < 0.2) {                   // arrived → choose a new waypoint
+        this.target = this.pickNewTarget();
+    } else {
+        // normalised direction
+        dir[0] /= dist; dir[1] /= dist; dir[2] /= dist;
+        // first-order acceleration toward dir (critically damped)
+        const ACC = this.speed * 2.5;    // 2.5 is ζ≈1 overdamped factor
+        this.vel[0] += dir[0] * ACC * dt;
+        this.vel[1] += dir[1] * ACC * dt;
+        this.vel[2] += dir[2] * ACC * dt;
+    }
+
+    // 3-B: tiny random wobble (smooth, not jittery) --------------------
+    const t = this.timer + this.seed * 0.001;
+    // three independent, cheap pseudo-sine generators
+    const wobble = [
+        Math.sin(t*3.11) + Math.sin(t*2.13+1.1),
+        Math.sin(t*2.87+0.5) + Math.sin(t*2.03),
+        Math.sin(t*3.71+2.7) + Math.sin(t*1.97+3.3)
+    ];
+    const k = this.wobbleAmp; // amplitude
+    this.position[0] += (this.vel[0] + wobble[0]*k) * dt;
+    this.position[1] += (this.vel[1] + wobble[1]*k) * dt;
+    this.position[2] += (this.vel[2] + wobble[2]*k) * dt;
+
+    // 3-C: confine inside box (reflect if outside)
+    for (let i = 0; i < 3; ++i) {
+        if (this.position[i] < this.min_flight_box[i]) {
+            this.position[i]  = this.min_flight_box[i];
+            this.vel[i] *= -0.5;
+        }
+        if (this.position[i] > this.max_flight_box[i]) {
+            this.position[i]  = this.max_flight_box[i];
+            this.vel[i] *= -0.5;
+        }
+    }
+
+    /* -------- light follow -------- */
+    if (light_id !== null) {
+        lights[light_id].position = this.position;
+    }
+}
+
+	// // Modified update
+	// update(dt, light_id) {
+	// 	this.timer += dt;
+	// 	const useHigh = Math.floor(this.timer * 30) % 2 === 0;
+	// 	this.current = useHigh ? this.highDrawer : this.lowDrawer;
+
+	// 	for (let i = 0; i < 3; i++) {
+	// 		// Update position with velocity integration as in AMR
+	// 	}
+	// 	if (light_id !== null) {
+	// 		lights[light_id].position = this.position; // Update light position
+	// 	}
+
+	// }
+
 	setTextureFromFile(imgFilePath) {
 		console.log("Loaded texture", imgFilePath);
 		const img = new Image();
@@ -70,10 +150,31 @@ class FlyingObject {
 		this.highDrawer.showTexture(true);
 	}
 
+pickNewTarget() {
+    // Keeps them inside your min/max box with a 15 % margin
+    const margin = 0.15;
+    const span   = [
+        (this.max_flight_box[0]-this.min_flight_box[0])*(1-2*margin),
+        (this.max_flight_box[1]-this.min_flight_box[1])*(1-2*margin),
+        (this.max_flight_box[2]-this.min_flight_box[2])*(1-2*margin)
+    ];
+    return [
+        this.min_flight_box[0] + span[0]*(margin + this.rand()),
+        this.min_flight_box[1] + span[1]*(margin + this.rand()),
+        this.min_flight_box[2] + span[2]*(margin + this.rand())
+    ];
+}
 
 	draw(mvp, mv, normalMat) {
-		this.current.draw(mvp, mv, normalMat);
+		const tx = this.position[0];
+		const ty = this.position[1];
+		const tz = this.position[2];
+		const rotX = 0, rotY = 0;
+		const localMV = GetModelViewMatrix(tx, ty, tz, rotX, rotY);
+		const combinedMVP = MatrixMult(mvp, localMV);
+		this.current.draw(combinedMVP, localMV, normalMat);
 	}
+
 }
 
 
@@ -91,14 +192,16 @@ class FlyingManager {
 	addFirefly(flyer) {
 		this.fireflies.push(flyer);
 		flyer.setTextureFromFile('firefly/firefly_color.png');
+		return flyer.position; // return initial position
 	}
 
 	update(dt) {
 		for (let hornet of this.hornets) {
-			hornet.update(dt);
+			hornet.update(dt, null); // no light needed
 		}
-		for (let firefly of this.fireflies) {
-			firefly.update(dt);
+
+		for (let i = 0; i < this.fireflies.length; i++) {
+			this.fireflies[i].update(dt, i);
 		}
 	}
 
