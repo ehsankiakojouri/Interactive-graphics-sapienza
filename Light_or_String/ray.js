@@ -32,6 +32,14 @@ class RayTracer
 			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].position'  ), lights[i].position  );
 			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].intensity' ), lights[i].intensity );
 		}
+		this.uLightPos = [];
+		this.uLightInt = [];
+		for (let i = 0; i < lights.length; ++i) {
+			this.uLightPos[i] = gl.getUniformLocation(this.prog,
+								`lights[${i}].position`);
+			this.uLightInt[i] = gl.getUniformLocation(this.prog,
+								`lights[${i}].intensity`);
+		}
 		this.updateProj();
 	}
 	updateProj()
@@ -51,10 +59,20 @@ class RayTracer
 	draw( mvp, trans )
 	{
 		if ( ! this.prog ) return;
+		this.updateLights();
 		background.draw( trans );
 		this.sphere.setTrans( mvp, [ trans.camToWorld[12], trans.camToWorld[13], trans.camToWorld[14] ] );
 		spheres.forEach( s => this.sphere.draw(s) );
 	}
+
+	updateLights() {
+		gl.useProgram(this.prog);
+		for (let i = 0; i < lights.length; ++i) {
+			gl.uniform3fv(this.uLightPos[i], lights[i].position);
+			gl.uniform3fv(this.uLightInt[i], lights[i].intensity);
+		}
+	}
+
 };
 
 

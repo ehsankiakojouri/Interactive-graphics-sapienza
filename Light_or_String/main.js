@@ -135,6 +135,9 @@ function AnimateScene(now) {
 
 
     window.flyingManager.update(dt, lights);
+	// sphereDrawer.setLight(lights[0].position, lights[0].intensity);
+	sphereDrawer.updateLights();
+	ray_tracer.updateLights();
 	projectile.update(dt);
     DrawScene();
     requestAnimationFrame(AnimateScene);
@@ -195,7 +198,7 @@ function WindowResize()
 }
 
 
-function NewScene()
+async function NewScene()
 {
 	var c = document.getElementById('controls');
 	c.style.display = 'none';
@@ -276,8 +279,10 @@ canvas.onmousemove = function(event) {
 
 	const fireflyCount = parseInt(document.getElementById("firefly-input").value);
 	const hornetCount = parseInt(document.getElementById("hornet-input").value);
-	ray_tracer.init();
-	InitScene(fireflyCount, hornetCount); 
+	InitScene(fireflyCount, hornetCount); // creates lights[]
+	ray_tracer  = new RayTracer();
+	ray_tracer.init();              // now #define NUM_LIGHTS is correct
+	sphereDrawer = new SphereDrawer();             // #define NUM_LIGHTS ok for water
 	projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
 	requestAnimationFrame(AnimateScene);
 	DrawScene();

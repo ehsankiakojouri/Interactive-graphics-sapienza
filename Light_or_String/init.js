@@ -14,12 +14,17 @@ function InitScene(fireflyCount = 10, hornetCount = 10) {
 			firefly.setMeshFromFile(fireflyLowData, 'low',),
 			firefly.setMeshFromFile(fireflyHighData, 'high')
 		]).then(() => {
-			light_pos = flyingManager.addFirefly(firefly);
-			lights.push({
-				position: light_pos,
-				intensity: [2.0, 2.0, 2.0]
+			// light_pos = flyingManager.addFirefly(firefly);
+			// lights.push({
+			// 	position: light_pos,
+			// 	intensity: [2.0, 2.0, 2.0]
 				// intensity: [1.0, 1.0, 0.77]
-				});
+				// });
+			const id = lights.length;              // <-- remember index
+			light_pos = flyingManager.addFirefly(firefly);
+			lights.push({ position: light_pos.slice(),  // copy, not ref
+			intensity: [2.0, 2.0, 2.0] });
+			firefly.light_id = id;                      // store for quick look-up
 			DrawScene();
 		});
 	}

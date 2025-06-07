@@ -152,12 +152,45 @@ class SphereProg
 	}
 };
 
-class SphereDrawer extends SphereProg
-{
-	constructor()
-	{
-		super();
-		this.prog = InitShaderProgramFromScripts( 'sphereVS', 'sphereFS' );
-		this.init();
-	}
-};
+// class SphereDrawer extends SphereProg
+// {
+// 	constructor()
+// 	{
+// 		super();
+// 		this.prog = InitShaderProgramFromScripts( 'sphereVS', 'sphereFS' );
+// 		this.init();
+// 	}
+// };
+
+class SphereDrawer extends SphereProg {
+    constructor() { super(); this.recompile(); }
+
+    /* re-build when light count changes ---------------------- */
+    recompile() {
+        const vsSrc = document.getElementById('sphereVS').text;
+        const fsTpl = document.getElementById('sphereFS_multi').text;
+        const fsSrc = `#define NUM_LIGHTS ${lights.length}\n` + fsTpl;
+
+        this.prog = InitShaderProgram(vsSrc, fsSrc);
+        this.init();                        // ↖ caches common uniforms
+
+        /* cache the per-light uniform locations --------------- */
+        this.uLightPos = [];
+        this.uLightInt = [];
+        for (let i = 0; i < lights.length; ++i) {
+            this.uLightPos[i] =
+                 gl.getUniformLocation(this.prog, `lights[${i}].position`);
+            this.uLightInt[i] =
+                 gl.getUniformLocation(this.prog, `lights[${i}].intensity`);
+        }
+    }
+
+    /* called once per frame ---------------------------------- */
+    updateLights() {
+        gl.useProgram(this.prog);
+        for (let i = 0; i < lights.length; ++i) {
+            gl.uniform3fv(this.uLightPos[i], lights[i].position);
+            gl.uniform3fv(this.uLightInt[i], lights[i].intensity);
+        }
+    }
+}

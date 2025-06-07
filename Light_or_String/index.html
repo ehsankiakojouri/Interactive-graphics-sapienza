@@ -59,6 +59,88 @@ void main()
 	gl_FragColor = vec4(color,1);
 }
 </script>
+<!-- 
+<script id="sphereFS_multi" type="x-shader/x-fragment">
+precision mediump float;
+#ifndef NUM_LIGHTS            // will be injected from JS
+#define NUM_LIGHTS 1
+#endif
+
+struct Material { vec3 k_d; vec3 k_s; float n; };
+struct Light    { vec3 position; vec3 intensity; };
+
+uniform samplerCube envMap;
+uniform Light    lights[NUM_LIGHTS];
+uniform vec3     campos;
+uniform Material mtl;
+
+varying vec3 pos;
+varying vec3 normal;
+
+void main()
+{
+    vec3 nrm   = normalize(normal);
+    vec3 view  = normalize(campos - pos);
+    vec3 color = vec3(0.0);
+
+    /* Blinn–Phong from every light ----------------------------- */
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+        vec3 L = normalize(lights[i].position - pos);
+        float c = max(dot(nrm, L), 0.0);
+        if (c > 0.0) {
+            vec3 h   = normalize(L + view);
+            float s  = pow(max(dot(nrm, h), 0.0), mtl.n);
+            color   += (mtl.k_d * c + mtl.k_s * s) * lights[i].intensity;
+        }
+    }
+
+    /* environment-map reflection ------------------------------- */
+    if (mtl.k_s.r + mtl.k_s.g + mtl.k_s.b > 0.0) {
+        vec3 refl = reflect(-view, nrm);
+        color += mtl.k_s * textureCube(envMap, refl.xzy).rgb;
+    }
+    gl_FragColor = vec4(color, 1.0);
+}
+</script> -->
+
+<script id="sphereFS_multi" type="x-shader/x-fragment">
+precision mediump float;
+#define MAX_SPEC  (0.0001)
+/* NUM_LIGHTS is injected from JS:  #define NUM_LIGHTS  N */
+
+struct Material { vec3 k_d; vec3 k_s; float n; };
+struct Light    { vec3 position; vec3 intensity; };
+
+uniform samplerCube envMap;
+uniform Light    lights[NUM_LIGHTS];
+uniform vec3     campos;
+uniform Material mtl;
+
+varying vec3 pos;
+varying vec3 normal;
+
+void main() {
+    vec3 N = normalize(normal);
+    vec3 V = normalize(campos - pos);
+    vec3 colour = vec3(0.0);
+
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+        vec3 L = normalize(lights[i].position - pos);
+        float c = max(dot(N,L), 0.0);              // Lambert
+        vec3  H = normalize(L + V);
+        float s = pow(max(dot(N,H), 0.0), mtl.n);  // Blinn
+        colour += lights[i].intensity *
+                  (mtl.k_d * c + mtl.k_s * s / max(c,MAX_SPEC));
+    }
+
+    /* cheap environment reflection */
+    if (mtl.k_s.r + mtl.k_s.g + mtl.k_s.b > 0.0) {
+        vec3 R = reflect(-V, N);
+        colour += mtl.k_s * textureCube(envMap, R.xzy).rgb;
+    }
+    gl_FragColor = vec4(colour, 1.0);
+}
+</script>
 
 <script id="raytraceVS" type="x-shader/x-vertex">
 attribute vec3 p;
@@ -95,7 +177,7 @@ void main()
 <script src="meshDrawer.js"></script>
 <script src="obj.js"></script>
 <script src="flyers.js"></script>
-<script src="projectile.js"></script>
+<script src="projectile	.js"></script>
 <script src="ray.js"></script>
 <script src="sphere.js"></script>
 <script src="init.js"></script>
