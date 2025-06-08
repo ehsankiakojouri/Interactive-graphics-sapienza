@@ -76,8 +76,8 @@ var fixed_spheres = [
 		center: [ 0, 0, -10001.0 ],
 		radius: 10000.0,
 		mtl: {
-			k_d: [ 0.1, 0.1, 0.2 ],
-			k_s: [ 0.2, 0.2, 0.2 ],
+		k_d: [ 0.06, 0.10, 0.16 ], // deeper blue-green diffuse
+        k_s: [ 0.3, 0.3, 0.3 ], // much weaker mirror term
 			n: 10
 		}
 	}

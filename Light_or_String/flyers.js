@@ -11,6 +11,8 @@ class FlyingObject {
 		this.current = this.lowDrawer;
 		this.position = this.getRandomPosition();
 
+		this.glow = null;
+
 		    // --- flight brain ---
 		this.seed   = performance.now() ^ Math.floor(Math.random()*1e9); // deterministic per object
 		this.rand   = mulberry32(this.seed);          // fast PRNG, see helper below
@@ -37,14 +39,14 @@ class FlyingObject {
 				const mesh = new ObjMesh();
 				mesh.parse(objdata);
 				const shift = [
-					(-(this.min_obj_box[0] + this.max_obj_box[0]) / 3) + this.position[0],
-					(-(this.min_obj_box[1] + this.max_obj_box[1]) / 3) + this.position[1],
-					(-(this.min_obj_box[2] + this.max_obj_box[2]) / 3) + this.position[2]
+					-(this.min_obj_box[0] + this.max_obj_box[0]) * 0.5,
+					-(this.min_obj_box[1] + this.max_obj_box[1]) * 0.5,
+					-(this.min_obj_box[2] + this.max_obj_box[2]) * 0.5
 				];
 				const size = [
-					(this.max_obj_box[0] - this.min_obj_box[0]) / 3,
-					(this.max_obj_box[1] - this.min_obj_box[1]) / 3,
-					(this.max_obj_box[2] - this.min_obj_box[2]) / 3
+					(this.max_obj_box[0] - this.min_obj_box[0]) / 2,
+					(this.max_obj_box[1] - this.min_obj_box[1]) / 2,
+					(this.max_obj_box[2] - this.min_obj_box[2]) / 2
 				];
 				const maxSize = Math.max(...size);
 				const scale = 0.3 / maxSize;
@@ -72,6 +74,15 @@ update(dt, light_id) {
     const useHigh = Math.floor(this.timer * 30) % 2 === 0;
     this.current  = useHigh ? this.highDrawer : this.lowDrawer;
 
+if (this.isFirefly) {
+    const flick = 0.85 + 0.15 * Math.sin(this.timer*10.0 + this.seed);
+    this.glowFlick = flick;
+    if (light_id !== null) {
+        lights[light_id].intensity = [
+            2.0*flick, 2.0*flick, 1.6*flick   // cooler tint
+        ];
+    }
+}
     /* -------- flight logic -------- */
     // 3-A: steer toward the current waypoint
     const dir = [
@@ -172,6 +183,9 @@ pickNewTarget() {
 		const rotX = 0, rotY = 0;
 		const localMV = GetModelViewMatrix(tx, ty, tz, rotX, rotY);
 		const combinedMVP = MatrixMult(mvp, localMV);
+		if (this.isFirefly && this.glow) {
+			this.glow.draw(mvp, this.position, this.glowFlick);
+		}
 		this.current.draw(combinedMVP, localMV, normalMat);
 	}
 
@@ -191,6 +205,8 @@ class FlyingManager {
 
 	addFirefly(flyer) {
 		this.fireflies.push(flyer);
+		flyer.isFirefly = true; 
+		flyer.glow = new GlowSprite();
 		flyer.setTextureFromFile('firefly/firefly_color.png');
 		return flyer.position; // return initial position
 	}

@@ -4,6 +4,7 @@ var lights = [
 		intensity: [ 2, 2, 2 ]
 	}
 ];
+
 const box_bound = 8;
 const max_flight_box = [ box_bound, box_bound, box_bound ];
 const min_flight_box = [ -box_bound, 0, 0 ];
@@ -179,4 +180,22 @@ function eulerRatesFromBodyRates(phi, theta, p, q, r) {
 }
 function randBetween(min, max) {
     return min + Math.random() * (max - min);
+}
+
+function hsvToRgb(h, s, v) {
+    let r, g, b;
+    let i = Math.floor(h * 6);
+    let f = h * 6 - i;
+    let p = v * (1 - s);
+    let q = v * (1 - f * s);
+    let t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return [r, g, b];
 }

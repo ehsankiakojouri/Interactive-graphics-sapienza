@@ -194,3 +194,65 @@ class SphereDrawer extends SphereProg {
         }
     }
 }
+
+class GlowSprite {
+    constructor(baseRadius = 0.7, color = [0.6, 0.9, 1.3]) {
+        this.baseR  = baseRadius;
+        // this.color = color;
+		// In GlowSprite constructor or firefly init
+		const baseHue = 0.18 + 0.04 * Math.random(); // yellow-green hues
+		this.color = hsvToRgb(baseHue, 1.0, 1.0);    // full saturation, full value
+
+        this.prog = InitShaderProgramFromScripts('glowVS','glowFS');
+		this.uInt = gl.getUniformLocation(this.prog, "intensity");
+        this.uMVP = gl.getUniformLocation(this.prog, "mvp");
+        this.uCen = gl.getUniformLocation(this.prog, "center");
+        this.uScale = gl.getUniformLocation(this.prog, "scale");
+        this.uRad = gl.getUniformLocation(this.prog, "radius");
+        this.uCol = gl.getUniformLocation(this.prog, "glowColor");
+        this.uGam = gl.getUniformLocation(this.prog, "gamma");   // NEW
+        this.vPos = gl.getAttribLocation (this.prog, "p");
+    }
+
+    /* draw N nested shells -------------------------------------------- */
+    draw(mvp, center, flick) {
+        gl.useProgram(this.prog);
+        gl.uniformMatrix4fv(this.uMVP, false, mvp);
+        gl.uniform3fv   (this.uCen, center);
+        gl.uniform3fv   (this.uCol, this.color);
+        gl.depthMask(false);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+        const LAYERS = 20;           // how many shells
+        const GAMMA  = 0.95;        // base γ  (outermost shell)
+        const RAD_K  = 1.4;         // radius→fade multiplier (same as before)
+		const BASE_INT = 0.001;   // outermost shell
+		const CORE_INT = 0.05;   // innermost shell (optional)
+
+		for (let i = 0; i < LAYERS; ++i) {
+			const g      = Math.pow(GAMMA, i);          // γ, γ², γ³…
+			const s      = this.baseR * flick * g;
+			const fade   = i / (LAYERS - 1);            // 0 → outer, 1 → inner
+			const inten  = BASE_INT + (CORE_INT - BASE_INT) * fade;
+
+			gl.uniform1f(this.uScale, s);
+			gl.uniform1f(this.uRad,   s * RAD_K);
+			gl.uniform1f(this.uGam,   g);
+			gl.uniform1f(this.uInt,   inten);           // pass intensity
+			triSphere.draw(this.vPos);
+		}
+
+        // for (let i = 0; i < LAYERS; ++i) {
+        //     const g = Math.pow(GAMMA, i);         // γ, γ², γ³, …
+        //     const s = this.baseR * flick * g;     // shrink geometry
+        //     gl.uniform1f(this.uScale, s);
+        //     gl.uniform1f(this.uRad,   s * RAD_K); // keep fade in sync
+        //     gl.uniform1f(this.uGam,   g);         // pass current γ
+        //     triSphere.draw(this.vPos);
+        // }
+
+        gl.disable(gl.BLEND);
+        gl.depthMask(true);
+    }
+}
