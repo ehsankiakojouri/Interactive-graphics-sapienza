@@ -1,46 +1,23 @@
 class Projectile {
-        constructor(gl, meshPath, texturePath) {
-                this.drawer = new MeshDrawer(gl);
-                this.position = [0, 0, 0];
-                this.velocity = [0, 0, 0];
-                this.active = true;
-                this.released = false;
-                this.sphereIdx = null;
+	constructor(gl, meshPath, texturePath) {
+		this.drawer = new MeshDrawer(gl);
+		this.position = [0, 0, 0];
+		this.velocity = [0, 0, 0];
+		this.active = true;
+		this.released = false;
 
 		// Load mesh
-                fetch(meshPath)
-                        .then(res => res.text())
-                        .then(obj => {
-                                const mesh = new ObjMesh();
-                                mesh.parse(obj);
-                                const bbox = mesh.getBoundingBox();
-                                const size = [
-                                        bbox.max[0]-bbox.min[0],
-                                        bbox.max[1]-bbox.min[1],
-                                        bbox.max[2]-bbox.min[2]
-                                ];
-                                const maxSize = Math.max(...size);
-                                const scale = 0.5; // provided scale
-                                mesh.shiftAndScale([0,0,0], scale);
-                                mesh.computeNormals();
-                                const diag = Math.sqrt(size[0]*size[0]+size[1]*size[1]+size[2]*size[2]);
-                                const radius = 0.5 * diag * scale;
-                                if (this.sphereIdx === null) {
-                                        this.sphereIdx = spheres.length;
-                                        spheres.push({
-                                                center: this.position.slice(),
-                                                radius: radius,
-                                                mtl: {k_d:[0.3,0.9,0.3], k_s:[0.05,0.05,0.05], n:5},
-                                                hidden: true
-                                        });
-                                        if (ray_tracer) ray_tracer.init();
-                                } else {
-                                        spheres[this.sphereIdx].radius = radius;
-                                }
-                                const vbufs = mesh.getVertexBuffers();
-                                this.drawer.setMesh(vbufs.positionBuffer, vbufs.texCoordBuffer, vbufs.normalBuffer);
-                                this.drawer.swapYZ(true);
-                        });
+		fetch(meshPath)
+			.then(res => res.text())
+			.then(obj => {
+				const mesh = new ObjMesh();
+				mesh.parse(obj);
+				mesh.shiftAndScale([0, 0, 0], 0.5); // small slime
+				mesh.computeNormals();
+				const vbufs = mesh.getVertexBuffers();
+				this.drawer.setMesh(vbufs.positionBuffer, vbufs.texCoordBuffer, vbufs.normalBuffer);
+				this.drawer.swapYZ(true);
+			});
 
 		// Load texture
 		const img = new Image();
@@ -54,8 +31,9 @@ class Projectile {
 		this.velocity = velocity.slice();
 		this.active = true;
 	}
-        update(dt) {
-                if (!this.active) return;
+
+	update(dt) {
+		if (!this.active) return;
 
 		// Update position with simple physics
 		// const gravity = -9.8;
@@ -66,13 +44,7 @@ class Projectile {
 
 		// // Deactivate if too low
 		// if (this.position[1] < -1) this.active = false;
-                if (this.sphereIdx !== null) {
-                        spheres[this.sphereIdx].center = this.position.slice();
-                }
-                // // Deactivate if too low
-                // if (this.position[1] < -1) this.active = false;
-        }
-
+	}
 
 	draw(mvp, mv, normalMat) {
 		if (!this.active) return;

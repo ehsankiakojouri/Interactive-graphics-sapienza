@@ -23,13 +23,11 @@ class RayTracer
 		}
 		
 		gl.useProgram( this.prog );
-                this.uSphereCenter = [];
-                for ( var i=0; i<spheres.length; ++i ) {
-                        gl.uniform3fv( gl.getUniformLocation( this.prog, 'spheres['+i+'].center' ), spheres[i].center );
-                        gl.uniform1f ( gl.getUniformLocation( this.prog, 'spheres['+i+'].radius' ), spheres[i].radius );
-                        setMaterial( this.prog, 'spheres['+i+'].mtl', spheres[i].mtl );
-                        this.uSphereCenter[i] = gl.getUniformLocation( this.prog, 'spheres['+i+'].center' );
-                }
+		for ( var i=0; i<spheres.length; ++i ) {
+			gl.uniform3fv( gl.getUniformLocation( this.prog, 'spheres['+i+'].center' ), spheres[i].center );
+			gl.uniform1f ( gl.getUniformLocation( this.prog, 'spheres['+i+'].radius' ), spheres[i].radius );
+			setMaterial( this.prog, 'spheres['+i+'].mtl', spheres[i].mtl );
+		}
 		for ( var i=0; i<lights.length; ++i ) {
 			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].position'  ), lights[i].position  );
 			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].intensity' ), lights[i].intensity );
@@ -63,25 +61,17 @@ class RayTracer
 		if ( ! this.prog ) return;
 		this.updateLights();
 		background.draw( trans );
-                this.sphere.setTrans( mvp, [ trans.camToWorld[12], trans.camToWorld[13], trans.camToWorld[14] ] );
-                spheres.forEach( s => { if (!s.hidden) this.sphere.draw(s); } );
-        }
+		this.sphere.setTrans( mvp, [ trans.camToWorld[12], trans.camToWorld[13], trans.camToWorld[14] ] );
+		spheres.forEach( s => this.sphere.draw(s) );
+	}
 
-        updateLights() {
-                gl.useProgram(this.prog);
-                for (let i = 0; i < lights.length; ++i) {
-                        gl.uniform3fv(this.uLightPos[i], lights[i].position);
-                        gl.uniform3fv(this.uLightInt[i], lights[i].intensity);
-                }
-        }
-
-        updateSpheres() {
-                if (!this.prog) return;
-                gl.useProgram(this.prog);
-                for (let i = 0; i < spheres.length; ++i) {
-                        gl.uniform3fv(this.uSphereCenter[i], spheres[i].center);
-                }
-        }
+	updateLights() {
+		gl.useProgram(this.prog);
+		for (let i = 0; i < lights.length; ++i) {
+			gl.uniform3fv(this.uLightPos[i], lights[i].position);
+			gl.uniform3fv(this.uLightInt[i], lights[i].intensity);
+		}
+	}
 
 };
 
