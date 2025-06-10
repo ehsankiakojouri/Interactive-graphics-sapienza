@@ -123,7 +123,7 @@ uniform samplerCube envMap;
 float reflectionBiasCoefficient = 1e-9;
 
 bool IntersectRay( inout HitInfo hit, Ray ray );
-bool IsInShadow( Ray ray, Light light );
+float SoftShadow( Ray ray, Light light );
 
 // Shades the given point and returns the computed color.
 vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
@@ -133,17 +133,17 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 	for ( int i=0; i<NUM_LIGHTS; ++i ) {
 		Ray toLightRay = Ray(position, normalize(lights[i].position - position));
 
-		// Check for shadows
-		bool isInShadow = IsInShadow(toLightRay, lights[i]);
+               // Compute a soft shadow factor in [0,1]
+               float shadow = SoftShadow(toLightRay, lights[i]);
 
-		// If not shadowed, perform shading using the Blinn model
-		if (isInShadow == false){
-			vec3 h = normalize(toLightRay.dir + view);
-			float cosTheta = dot(toLightRay.dir, normal);
-			float cosPhi = dot(h, normal);
-			color += lights[i].intensity * max(0.0, cosTheta) *(mtl.k_d + mtl.k_s * (pow(max(cosPhi, 0.0), mtl.n)/cosTheta));	
-		}
-	}
+               // If not completely shadowed, perform shading using the Blinn model
+               if (shadow > 0.0){
+                       vec3 h = normalize(toLightRay.dir + view);
+                       float cosTheta = dot(toLightRay.dir, normal);
+                       float cosPhi = dot(h, normal);
+                       color += lights[i].intensity * shadow * max(0.0, cosTheta) *(mtl.k_d + mtl.k_s * (pow(max(cosPhi, 0.0), mtl.n)/cosTheta));
+               }
+       }
 	return color;
 }
 
@@ -175,22 +175,25 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 	return foundHit;
 }
 
-bool IsInShadow(Ray ray, Light light)
+float SoftShadow(Ray ray, Light light)
 {
-	for ( int i=0; i<NUM_SPHERES; ++i ) {
-		float a = dot(ray.dir, ray.dir);
-		float b = 2.0 * dot(ray.dir, (ray.pos - spheres[i].center));
-		float c = dot((ray.pos - spheres[i].center), (ray.pos - spheres[i].center)) - pow(spheres[i].radius, 2.0);
-		float delta = pow(b, 2.0) - 4.0 * a * c;
+        float distToLight = length(light.position - ray.pos);
+        float shade = 1.0;
+        for ( int i=0; i<NUM_SPHERES; ++i ) {
+                float a = dot(ray.dir, ray.dir);
+                float b = 2.0 * dot(ray.dir, (ray.pos - spheres[i].center));
+                float c = dot((ray.pos - spheres[i].center), (ray.pos - spheres[i].center)) - pow(spheres[i].radius, 2.0);
+                float delta = pow(b, 2.0) - 4.0 * a * c;
 
-		if (delta >= 0.0){
-			float t = (-b - sqrt(delta)) / (2.0 * a);
-			if (t >= reflectionBiasCoefficient){
-				return true;
-			}
-		}		
-	}
-	return false;
+                if (delta >= 0.0){
+                        float t = (-b - sqrt(delta)) / (2.0 * a);
+                        if (t >= reflectionBiasCoefficient && t <= distToLight){
+                                float fade = 1.0 - smoothstep(0.0, 0.25 * distToLight, t);
+                                shade = min(shade, fade);
+                        }
+                }
+        }
+        return shade;
 }
 
 // Given a ray, returns the shaded color where the ray intersects a sphere.
