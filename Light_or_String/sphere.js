@@ -200,7 +200,7 @@ class GlowSprite {
         this.baseR  = baseRadius;
         // this.color = color;
 		// In GlowSprite constructor or firefly init
-		const baseHue = 0.165 + 0.03 * Math.random(); // yellow-green hues
+		const baseHue = 0.18 + 0.04 * Math.random(); // yellow-green hues
 		this.color = hsvToRgb(baseHue, 1.0, 1.0);    // full saturation, full value
 
         this.prog = InitShaderProgramFromScripts('glowVS','glowFS');
