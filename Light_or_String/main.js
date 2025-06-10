@@ -72,15 +72,16 @@ var background = {
 };
 
 var fixed_spheres = [
-	{
-		center: [ 0, 0, -10001.0 ],
-		radius: 10000.0,
-		mtl: {
-		k_d: [ 0.06, 0.10, 0.16 ], // deeper blue-green diffuse
+        {
+                center: [ 0, 0, -10001.0 ],
+                radius: 10000.0,
+                mtl: {
+                k_d: [ 0.06, 0.10, 0.16 ], // deeper blue-green diffuse
         k_s: [ 0.3, 0.3, 0.3 ], // much weaker mirror term
 			n: 10
-		}
-	}
+                },
+                hidden: false
+        }
 ];
 
 var spheres = fixed_spheres.slice();
@@ -136,9 +137,10 @@ function AnimateScene(now) {
 
     window.flyingManager.update(dt, lights);
 	// sphereDrawer.setLight(lights[0].position, lights[0].intensity);
-	sphereDrawer.updateLights();
-	ray_tracer.updateLights();
-	projectile.update(dt);
+        sphereDrawer.updateLights();
+        ray_tracer.updateLights();
+        ray_tracer.updateSpheres();
+        projectile.update(dt);
     DrawScene();
     requestAnimationFrame(AnimateScene);
 }
