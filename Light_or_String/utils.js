@@ -1,8 +1,10 @@
 var lights = [
 	{
-			position:  [ 100000, 100000, 100000 ],
-			intensity: [ 5, 5, 5 ],
-			radius: 0.5
+		// Placed high above the scene to mimic moonlight
+		position:  [ 0, 8, 5 ],
+		// Slight bluish tint to resemble a night moon
+		intensity: [ 0.7, 0.7, 1.4 ],
+		radius: 0.5
 	}
 ];
 
