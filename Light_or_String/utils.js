@@ -1,7 +1,8 @@
 var lights = [
 	{
-		position:  [ 100000, 100000, 100000 ],
-		intensity: [ 5, 5, 5 ]
+			position:  [ 100000, 100000, 100000 ],
+			intensity: [ 5, 5, 5 ],
+			radius: 0.5
 	}
 ];
 

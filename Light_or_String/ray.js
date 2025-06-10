@@ -30,18 +30,22 @@ class RayTracer
                         setMaterial( this.prog, 'spheres['+i+'].mtl', spheres[i].mtl );
                         this.uSphereCenter[i] = gl.getUniformLocation( this.prog, 'spheres['+i+'].center' );
                 }
-		for ( var i=0; i<lights.length; ++i ) {
-			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].position'  ), lights[i].position  );
-			gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].intensity' ), lights[i].intensity );
-		}
-		this.uLightPos = [];
-		this.uLightInt = [];
-		for (let i = 0; i < lights.length; ++i) {
-			this.uLightPos[i] = gl.getUniformLocation(this.prog,
-								`lights[${i}].position`);
-			this.uLightInt[i] = gl.getUniformLocation(this.prog,
-								`lights[${i}].intensity`);
-		}
+                for ( var i=0; i<lights.length; ++i ) {
+                        gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].position'  ), lights[i].position  );
+                        gl.uniform3fv( gl.getUniformLocation( this.prog, 'lights['+i+'].intensity' ), lights[i].intensity );
+                        gl.uniform1f ( gl.getUniformLocation( this.prog, 'lights['+i+'].radius'    ), lights[i].radius );
+                }
+                this.uLightPos = [];
+                this.uLightInt = [];
+                this.uLightRad = [];
+                for (let i = 0; i < lights.length; ++i) {
+                        this.uLightPos[i] = gl.getUniformLocation(this.prog,
+                                                                `lights[${i}].position`);
+                        this.uLightInt[i] = gl.getUniformLocation(this.prog,
+                                                                `lights[${i}].intensity`);
+                        this.uLightRad[i] = gl.getUniformLocation(this.prog,
+                                                                `lights[${i}].radius`);
+                }
 		this.updateProj();
 	}
 	updateProj()
@@ -72,6 +76,8 @@ class RayTracer
                 for (let i = 0; i < lights.length; ++i) {
                         gl.uniform3fv(this.uLightPos[i], lights[i].position);
                         gl.uniform3fv(this.uLightInt[i], lights[i].intensity);
+						gl.uniform1f(this.uLightRad[i], lights[i].radius);
+
                 }
         }
 
@@ -107,6 +113,8 @@ struct Sphere {
 struct Light {
 	vec3 position;
 	vec3 intensity;
+	float radius;
+
 };
 
 struct HitInfo {
@@ -181,22 +189,31 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 
 float SoftShadow(Ray ray, Light light)
 {
-        float distToLight = length(light.position - ray.pos);
-        float shade = 1.0;
-        for ( int i=0; i<NUM_SPHERES; ++i ) {
-				vec3  oc   = spheres[i].center - ray.pos;
-                float proj = dot(oc, ray.dir);
-                if (proj > reflectionBiasCoefficient && proj < distToLight) {
-                        float d2 = dot(oc, oc) - proj*proj;
-                        float r  = spheres[i].radius;
-                        if (d2 < r*r) {
-                                float dist = sqrt(d2);
-                                float fade = 1.0 - smoothstep(r*0.7, r, dist);
-                                shade = min(shade, fade);
-                        }
-                }
+        const int NUM_SAMPLES = 4;
+        vec3 baseDir = normalize(light.position - ray.pos);
+
+        // Build an orthonormal basis around the light direction
+        vec3 up = abs(baseDir.y) < 0.99 ? vec3(0.0,1.0,0.0) : vec3(1.0,0.0,0.0);
+        vec3 tangent = normalize(cross(up, baseDir));
+        vec3 bitangent = cross(baseDir, tangent);
+
+        vec2 offsets[4];
+        offsets[0] = vec2(-0.5, -0.5);
+        offsets[1] = vec2( 0.5, -0.5);
+        offsets[2] = vec2(-0.5,  0.5);
+        offsets[3] = vec2( 0.5,  0.5);
+
+        float shade = 0.0;
+        for (int s = 0; s < NUM_SAMPLES; ++s) {
+                vec3 samplePos = light.position +
+                        light.radius * (offsets[s].x * tangent + offsets[s].y * bitangent);
+                vec3 dir = samplePos - ray.pos;
+                float dist = length(dir);
+                Ray r = Ray(ray.pos, dir / dist);
+                HitInfo h;
+                if (!IntersectRay(h, r) || h.t > dist) shade += 1.0;
         }
-        return shade;
+        return shade / float(NUM_SAMPLES);
 }
 
 // Given a ray, returns the shaded color where the ray intersects a sphere.

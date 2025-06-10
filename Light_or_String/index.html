@@ -23,7 +23,7 @@ void main() {
 <script id="sphereFS" type="x-shader/x-fragment">
 precision mediump float;
 struct Material { vec3 k_d; vec3 k_s; float n; };
-struct Light    { vec3 position; vec3 intensity; };
+struct Light    { vec3 position; vec3 intensity; float radius; };
 uniform samplerCube envMap;
 uniform Light    light;
 uniform vec3     campos;
@@ -112,7 +112,7 @@ precision mediump float;
 #endif
 
 struct Material { vec3 k_d; vec3 k_s; float n; };
-struct Light    { vec3 position; vec3 intensity; };
+struct Light    { vec3 position; vec3 intensity; float radius; };
 
 uniform samplerCube envMap;
 uniform Light    lights[NUM_LIGHTS];

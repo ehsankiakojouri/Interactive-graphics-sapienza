@@ -134,12 +134,13 @@ class SphereProg
 		gl.uniformMatrix4fv( this.mvp, false, mvp );
 		gl.uniform3fv( this.campos, campos );
 	}
-	setLight( pos, intens )
-	{
-		gl.useProgram( this.prog );
-		gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.position'  ), pos    );
-		gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.intensity' ), intens );
-	}
+        setLight( pos, intens, radius )
+        {
+                gl.useProgram( this.prog );
+                gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.position'  ), pos    );
+                gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.intensity' ), intens );
+                gl.uniform1f ( gl.getUniformLocation( this.prog, 'light.radius'    ), radius );
+        }
 	draw( sphere )
 	{
 		gl.useProgram( this.prog );
@@ -177,11 +178,15 @@ class SphereDrawer extends SphereProg {
         /* cache the per-light uniform locations --------------- */
         this.uLightPos = [];
         this.uLightInt = [];
+		this.uLightRad = [];
+
         for (let i = 0; i < lights.length; ++i) {
             this.uLightPos[i] =
                  gl.getUniformLocation(this.prog, `lights[${i}].position`);
             this.uLightInt[i] =
                  gl.getUniformLocation(this.prog, `lights[${i}].intensity`);
+			this.uLightRad[i] =
+                 gl.getUniformLocation(this.prog, `lights[${i}].radius`);
         }
     }
 
@@ -191,6 +196,7 @@ class SphereDrawer extends SphereProg {
         for (let i = 0; i < lights.length; ++i) {
             gl.uniform3fv(this.uLightPos[i], lights[i].position);
             gl.uniform3fv(this.uLightInt[i], lights[i].intensity);
+            gl.uniform1f(this.uLightRad[i], lights[i].radius);
         }
     }
 }
