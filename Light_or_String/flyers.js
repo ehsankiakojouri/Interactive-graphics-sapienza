@@ -11,7 +11,8 @@ class FlyingObject {
 		this.current = this.lowDrawer;
 		this.position = this.getRandomPosition();
 
-		this.glow = null;
+                this.glow = null;
+                this.sphereIdx = null;
 
 		    // --- flight brain ---
 		this.seed   = performance.now() ^ Math.floor(Math.random()*1e9); // deterministic per object
@@ -32,12 +33,12 @@ class FlyingObject {
 		];
 	}
 
-	setMeshFromFile(objFilePath, type) {
-		return fetch(objFilePath)
-			.then(response => response.text())
-			.then(objdata => {
-				const mesh = new ObjMesh();
-				mesh.parse(objdata);
+        setMeshFromFile(objFilePath, type) {
+                return fetch(objFilePath)
+                        .then(response => response.text())
+                        .then(objdata => {
+                                const mesh = new ObjMesh();
+                                mesh.parse(objdata);
 				const shift = [
 					-(this.min_obj_box[0] + this.max_obj_box[0]) * 0.5,
 					-(this.min_obj_box[1] + this.max_obj_box[1]) * 0.5,
@@ -48,11 +49,24 @@ class FlyingObject {
 					(this.max_obj_box[1] - this.min_obj_box[1]) / 2,
 					(this.max_obj_box[2] - this.min_obj_box[2]) / 2
 				];
-				const maxSize = Math.max(...size);
-				const scale = 0.3 / maxSize;
-				
-				mesh.shiftAndScale(shift, scale);
-				mesh.computeNormals();
+                                const maxSize = Math.max(...size);
+                                const scale = 0.3 / maxSize;
+
+                                mesh.shiftAndScale(shift, scale);
+                                mesh.computeNormals();
+
+                                if (type === 'low' && this.sphereIdx === null) {
+                                        const diag = Math.sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
+                                        const radius = 0.5 * diag * scale;
+                                        this.sphereIdx = spheres.length;
+                                        spheres.push({
+                                                center: this.position.slice(),
+                                                radius: radius,
+                                                mtl: { k_d:[0.4,0.4,0.4], k_s:[0.1,0.1,0.1], n:10 },
+                                                hidden: true
+                                        });
+                                        if (ray_tracer) ray_tracer.init();
+                                }
 
 				const vbufs = mesh.getVertexBuffers();
 				if (type === 'low') {
@@ -131,6 +145,10 @@ if (this.isFirefly) {
     /* -------- light follow -------- */
     if (light_id !== null) {
         lights[light_id].position = this.position;
+    }
+	
+    if (this.sphereIdx !== null) {
+        spheres[this.sphereIdx].center = this.position.slice();
     }
 }
 
