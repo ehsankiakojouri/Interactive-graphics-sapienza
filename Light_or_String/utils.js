@@ -1,7 +1,7 @@
 var lights = [
 	{
 		position:  [ 100000, 100000, 100000 ],
-		intensity: [ 2, 2, 2 ]
+		intensity: [ 0.1, 0.1, 0.1 ]
 	}
 ];
 

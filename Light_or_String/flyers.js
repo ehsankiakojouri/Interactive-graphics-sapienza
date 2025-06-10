@@ -93,7 +93,7 @@ if (this.isFirefly) {
     this.glowFlick = flick;
     if (light_id !== null) {
         lights[light_id].intensity = [
-            2.0*flick, 2.0*flick, 1.6*flick   // cooler tint
+            0.30*flick, 0.30*flick, 0.24*flick   // cooler tint
         ];
     }
 }

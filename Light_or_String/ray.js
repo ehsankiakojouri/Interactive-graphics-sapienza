@@ -110,10 +110,12 @@ struct Light {
 };
 
 struct HitInfo {
-	float    t;
-	vec3     position;
-	vec3     normal;
-	Material mtl;
+        float    t;
+        vec3     position;
+        vec3     normal;
+        Material mtl;
+        vec3     center;
+        float    radius;
 };
 
 uniform Sphere spheres[ NUM_SPHERES ];
@@ -167,11 +169,13 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 				hit.t = newT;
 				hit.position = ray.pos + newT*ray.dir;
 				hit.normal = normalize(hit.position - spheres[i].center);
-				hit.mtl = spheres[i].mtl;
-				foundHit = true;
-			}
-		}
-	}
+                               hit.mtl = spheres[i].mtl;
+                               hit.center = spheres[i].center;
+                               hit.radius = spheres[i].radius;
+                               foundHit = true;
+                        }
+                }
+        }
 	return foundHit;
 }
 
@@ -180,15 +184,14 @@ float SoftShadow(Ray ray, Light light)
         float distToLight = length(light.position - ray.pos);
         float shade = 1.0;
         for ( int i=0; i<NUM_SPHERES; ++i ) {
-                float a = dot(ray.dir, ray.dir);
-                float b = 2.0 * dot(ray.dir, (ray.pos - spheres[i].center));
-                float c = dot((ray.pos - spheres[i].center), (ray.pos - spheres[i].center)) - pow(spheres[i].radius, 2.0);
-                float delta = pow(b, 2.0) - 4.0 * a * c;
-
-                if (delta >= 0.0){
-                        float t = (-b - sqrt(delta)) / (2.0 * a);
-                        if (t >= reflectionBiasCoefficient && t <= distToLight){
-                                float fade = 1.0 - smoothstep(0.0, 0.25 * distToLight, t);
+				vec3  oc   = spheres[i].center - ray.pos;
+                float proj = dot(oc, ray.dir);
+                if (proj > reflectionBiasCoefficient && proj < distToLight) {
+                        float d2 = dot(oc, oc) - proj*proj;
+                        float r  = spheres[i].radius;
+                        if (d2 < r*r) {
+                                float dist = sqrt(d2);
+                                float fade = 1.0 - smoothstep(r*0.7, r, dist);
                                 shade = min(shade, fade);
                         }
                 }
@@ -203,22 +206,25 @@ vec4 RayTracer( Ray ray )
 	HitInfo hit;
 	if ( IntersectRay( hit, ray ) ) {
 		vec3 view = normalize( -ray.dir );
-		vec3 clr = Shade( hit.mtl, hit.position, hit.normal, view );
-		
-		// Compute reflections
-		vec3 k_s = hit.mtl.k_s;
-		if (hit.mtl.k_s.r + hit.mtl.k_s.g + hit.mtl.k_s.b > 0.0) {
-			Ray r;
+                vec3 clr = Shade( hit.mtl, hit.position, hit.normal, view );
+                float centerDist = length(hit.position - hit.center);
+                float edgeFade = 1.0 - smoothstep(hit.radius*0.7, hit.radius, centerDist);
+                clr *= edgeFade;
+
+                // Compute reflections
+                vec3 k_s = hit.mtl.k_s;
+                if (hit.mtl.k_s.r + hit.mtl.k_s.g + hit.mtl.k_s.b > 0.0) {
+                        Ray r;
 			r.pos = hit.position;
 			r.dir = reflect(ray.dir, hit.normal);
 
 			HitInfo h;
 			if (IntersectRay(h, r)) {
-				clr += Shade(h.mtl, h.position, h.normal, view) * hit.mtl.k_s;
-			} else {
-				clr += hit.mtl.k_s * textureCube(envMap, r.dir.xzy).rgb;
-			}
-		}
+                                clr += Shade(h.mtl, h.position, h.normal, view) * hit.mtl.k_s * edgeFade;
+                        } else {
+                                clr += hit.mtl.k_s * textureCube(envMap, r.dir.xzy).rgb * edgeFade;
+                        }
+                }
 
 		return vec4( clr, 1 );	// return the accumulated color, including the reflections
 	} else {

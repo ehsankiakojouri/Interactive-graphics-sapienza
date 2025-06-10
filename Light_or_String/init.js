@@ -23,7 +23,7 @@ function InitScene(fireflyCount = 10, hornetCount = 10) {
 			const id = lights.length;              // <-- remember index
 			light_pos = flyingManager.addFirefly(firefly);
 			lights.push({ position: light_pos.slice(),  // copy, not ref
-			intensity: [2.0, 2.0, 2.0] });
+			intensity: [0.001, 0.001, 0.001] });
 			firefly.light_id = id;                      // store for quick look-up
 			DrawScene();
 		});
