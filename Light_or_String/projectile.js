@@ -57,8 +57,7 @@ class Projectile {
         this.mass = 0.1;
         this.stiffness = 1;
         this.damping = 1;
-        this.gravity = new Vec3(0,0.0,0);
-        this.gravity = new Vec3(0,0.0,0);
+        this.gravity = new Vec3(0,0,0);
         this.restitution = 0.8;
 
         fetch(meshPath)
@@ -154,13 +153,18 @@ class Projectile {
         this.drawer.setMesh(this.buffers.positionBuffer,this.buffers.texCoordBuffer,this.buffers.normalBuffer);
     }
 
-    launch(position,velocity){
-        this.position=position.slice();
-        this.vel.forEach(v=>v.set(new Vec3(...velocity)));
-        this.active=true;
+    launch(position, acceleration) {
+        // Clone and modify acceleration to avoid mutating the original
+        let acc = acceleration.slice();
+        acc[1] += -9.82;
+
+        console.log("with acceleration:", acc);
+        for (let i = 0; i < this.gravity.length; i++) {
+            this.gravity[i].set(new Vec3(...acc));
+        }
     }
     update(dt){
-        if(!this.active||!this.pos) return;
+        if(!this.pos) return;
         const damping=this.damping*this.stiffness*dt;
         SimTimeStep(dt,this.pos,this.vel,this.springs,this.stiffness,damping,this.mass,this.gravity,this.restitution);
         this.updateMesh();

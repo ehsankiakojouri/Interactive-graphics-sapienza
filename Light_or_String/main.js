@@ -17,7 +17,7 @@ let aiming=false;
 let aimYaw=0;
 let aimPitch=0;
 const AIM_STEP=0.05;
-const LAUNCH_POWER=0.00001;
+const LAUNCH_POWER=1;
 
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
@@ -231,8 +231,8 @@ function handleAimKeyUp(e){
     if(e.key=="Shift" && aiming){
         aiming=false;
         const dir=[Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), -Math.cos(aimYaw)*Math.cos(aimPitch)];
-        const vel=dir.map(d=>d*LAUNCH_POWER);
-        projectile.launch(slingshot.position.slice(), vel);
+        const acceleration=dir.map(d=>d*LAUNCH_POWER);
+        projectile.launch(slingshot.position.slice(), acceleration);
     }
 }
 
