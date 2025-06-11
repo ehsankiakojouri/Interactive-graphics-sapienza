@@ -17,7 +17,7 @@ let aiming=false;
 let aimYaw=0;
 let aimPitch=0;
 const AIM_STEP=0.05;
-const LAUNCH_POWER=1;
+const LAUNCH_POWER=150;
 
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
@@ -168,11 +168,16 @@ function AnimateScene(now) {
 	sphereDrawer.updateLights();
 	ray_tracer.updateLights();
 	ray_tracer.updateSpheres();
-	projectile.update(dt);
-	if (projectile.position && projectile.position[1] <= -2.5) {
-		if (projectile.sphereIdx !== null) {
-			// Remove the sphere entirely
-			spheres.splice(projectile.sphereIdx, 1);
+        projectile.update(dt);
+        // wait until the initial launch impulse has faded to avoid
+        // immediately respawning when the projectile starts below
+        // the ground level
+        if (projectile.position &&
+            projectile.position[1] <= -2 &&
+            projectile.launchAcc.len() < 0.05) {
+                if (projectile.sphereIdx !== null) {
+                        // Remove the sphere entirely
+                        spheres.splice(projectile.sphereIdx, 1);
 			// IMPORTANT: update indices if needed elsewhere
 			projectile.sphereIdx = null;
 		}
@@ -230,7 +235,7 @@ function handleAimKeyDown(e){
 function handleAimKeyUp(e){
     if(e.key=="Shift" && aiming){
         aiming=false;
-        const dir=[Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), -Math.cos(aimYaw)*Math.cos(aimPitch)];
+        const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
         const acceleration=dir.map(d=>d*LAUNCH_POWER);
         projectile.launch(slingshot.position.slice(), acceleration);
     }

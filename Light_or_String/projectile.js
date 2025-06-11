@@ -159,11 +159,11 @@ class Projectile {
 
     launch(position, acceleration) {
         // Reset position and velocities
-        this.position = position.slice();
+        //this.position = position.slice();
         if(this.vel) for(let v of this.vel) v.set(new Vec3(0,0,0));
 
         // Earth gravity now starts acting
-        this.gravity = new Vec3(0,-9.82,0);
+        this.gravity = new Vec3(0,-2,0);
 
         // Initial acceleration provided by the slingshot
         this.launchAcc = new Vec3(...acceleration);
