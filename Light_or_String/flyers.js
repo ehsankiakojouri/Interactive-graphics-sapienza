@@ -55,7 +55,7 @@ class FlyingObject {
                                 mesh.shiftAndScale(shift, scale);
                                 mesh.computeNormals();
 
-                                if (type === 'low' && this.sphereIdx === null) {
+                                if (type === 'low' && this.sphereIdx === null && !this.isFirefly) {
                                         const diag = Math.sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
                                         const radius = 0.5 * diag * scale;
                                         this.sphereIdx = spheres.length;
@@ -92,7 +92,7 @@ if (this.isFirefly) {
     const flick = 0.85 + 0.15 * Math.sin(this.timer*10.0 + this.seed);
     this.glowFlick = flick;
     if (light_id !== null) {
-        lights[light_id].intensity = [
+        lights[light_id+1].intensity = [
             0.15*flick, 0.15*flick, 0.10*flick   // cooler tint
         ];
     }
@@ -144,7 +144,7 @@ if (this.isFirefly) {
 
     /* -------- light follow -------- */
     if (light_id !== null) {
-        lights[light_id].position = this.position;
+        lights[light_id+1].position = this.position;
     }
 	
     if (this.sphereIdx !== null) {
