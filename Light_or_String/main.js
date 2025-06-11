@@ -6,6 +6,7 @@ let dragStart = null;
 let dragCurrent = null;
 let dragDepth = 3.0;
 let dragOffset = [0, 0];
+let slingshot;
 
 let projectile;
 var sphereDrawer;
@@ -19,8 +20,8 @@ var ray_tracer;
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
 		this.drawer = new MeshDrawer(gl);
-		this.position = [0, 0, 0];
-		this.rotation = [0, 0]; // if needed
+		this.position = [0, -4, 0];
+		this.rotation = [0, 0, 0]; // if needed
 
 		// Load mesh
 		fetch(meshPath)
@@ -28,7 +29,7 @@ class Slingshot {
 			.then(obj => {
 				const mesh = new ObjMesh();
 				mesh.parse(obj);
-				mesh.shiftAndScale([0, 0, 0], 0.4); // scale and position
+				mesh.shiftAndScale([0, 0, 0], 10); // scale and position
 				mesh.computeNormals();
 				const vbufs = mesh.getVertexBuffers();
 				this.drawer.setMesh(vbufs.positionBuffer, vbufs.texCoordBuffer, vbufs.normalBuffer);
@@ -46,7 +47,7 @@ class Slingshot {
 		const tx = this.position[0];
 		const ty = this.position[1];
 		const tz = this.position[2];
-		const localMV = GetModelViewMatrix(tx, ty, tz, this.rotation[0], this.rotation[1]);
+		const localMV = GetModelViewMatrix(tx, ty, tz, this.rotation[0], this.rotation[1], this.rotation[2]);
 		const combinedMVP = MatrixMult(mvp, localMV);
 		this.drawer.draw(combinedMVP, localMV, normalMat);
 	}
@@ -187,6 +188,7 @@ function DrawScene() {
 	if (window.flyingManager) {
 		window.flyingManager.draw(mvp, mv, normalMat);
 	}
+	slingshot.draw(mvp, mv, normalMat);
 	projectile.draw(mvp, mv, normalMat);
 
 }
@@ -286,6 +288,8 @@ canvas.onmousemove = function(event) {
 	ray_tracer.init();              // now #define NUM_LIGHTS is correct
 	sphereDrawer = new SphereDrawer();             // #define NUM_LIGHTS ok for water
 	projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
+  	slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
+
 	requestAnimationFrame(AnimateScene);
 	DrawScene();
 }

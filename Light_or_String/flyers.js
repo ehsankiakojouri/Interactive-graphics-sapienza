@@ -51,13 +51,14 @@ class FlyingObject {
 				];
                                 const maxSize = Math.max(...size);
                                 const scale = 0.3 / maxSize;
+                                const diag = Math.sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
+                                const radius = 0.5 * diag * scale;
 
+                                this.radius = radius;
                                 mesh.shiftAndScale(shift, scale);
                                 mesh.computeNormals();
 
                                 if (type === 'low' && this.sphereIdx === null && !this.isFirefly) {
-                                        const diag = Math.sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
-                                        const radius = 0.5 * diag * scale;
                                         this.sphereIdx = spheres.length;
                                         spheres.push({
                                                 center: this.position.slice(),

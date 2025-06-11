@@ -1,0 +1,1 @@
+._glow_1o0tc_1{position:relative}@keyframes _glowFlash_1o0tc_1{0%{opacity:0}8%{opacity:1}80%{opacity:1}to{opacity:0}}._glow_1o0tc_1:after{animation:_glowFlash_1o0tc_1 1.8s ease-out forwards;border-radius:16px;box-shadow:0 0 2px 1px var(--border-xheavy);content:"";inset:4px 0 0;opacity:0;position:absolute;z-index:2}
