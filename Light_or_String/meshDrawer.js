@@ -68,6 +68,8 @@ class MeshDrawer
         this.meshReady = false;
         this.textureReady = false;
         this.showTex   = true;
+        this.power     = 0.0;        // tint amount for redness
+
 	}
 	
 	// This method is called every time the user opens an OBJ file.
@@ -138,12 +140,16 @@ class MeshDrawer
 		this.gl.uniform1i(samplerLoc, 0);
 	}
 
-	const showLoc = this.gl.getUniformLocation(this.program, "showTexture");
-	this.gl.uniform1i(showLoc, this.showTex ? 1 : 0);
-    
-		this.gl.drawArrays(this.gl.TRIANGLES, 0, this.numTriangles );
-	}
-	
+        const showLoc = this.gl.getUniformLocation(this.program, "showTexture");
+        this.gl.uniform1i(showLoc, this.showTex ? 1 : 0);
+
+        // set current power level for tinting
+        const powLoc = this.gl.getUniformLocation(this.program, "power");
+        this.gl.uniform1f(powLoc, this.power);
+
+                this.gl.drawArrays(this.gl.TRIANGLES, 0, this.numTriangles );
+        }
+
 	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
 	setTexture( img )
@@ -165,7 +171,11 @@ class MeshDrawer
         this.textureReady = true;
         if (this.showTex) this.showTexture(true);
 	}
-	
+    // Set the redness power (0..1)
+    setPowerLevel( p )
+    {
+        this.power = p;
+    }
 	// This method is called when the user changes the state of the
 	// "Show Texture" checkbox. 
 	// The argument is a boolean that indicates if the checkbox is checked.
@@ -238,11 +248,14 @@ class MeshDrawer
         return `
 			precision mediump float;
 			varying vec2 vUV;
-			uniform sampler2D textureID;
-			uniform bool showTexture;
-			void main() {
-				if (showTexture) gl_FragColor = texture2D(textureID, vUV);
-				else gl_FragColor = vec4(1.0, gl_FragCoord.z * gl_FragCoord.z, 0.0, 1.0);
-			}`
+            uniform sampler2D textureID;
+            uniform bool showTexture;
+            uniform float power;
+            void main() {
+                    vec3 baseColor = showTexture ? texture2D(textureID, vUV).rgb
+                                            : vec3(1.0, gl_FragCoord.z * gl_FragCoord.z, 0.0);
+                    vec3 finalColor = mix(baseColor, vec3(1.0,0.0,0.0), power);
+                    gl_FragColor = vec4(finalColor, 1.0);
+            }`
     }
 }

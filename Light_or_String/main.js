@@ -17,7 +17,11 @@ let aiming=false;
 let aimYaw=0;
 let aimPitch=0;
 const AIM_STEP=0.05;
-const LAUNCH_POWER=150;
+const MIN_POWER=1000;
+const MAX_POWER=2000;
+const POWER_PERIOD=2.0; // seconds for full oscillation
+let powerTimer=0;
+let currentPower=MIN_POWER;
 
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
@@ -77,6 +81,10 @@ class Slingshot {
 		const localMV = GetModelViewMatrix(tx, ty, tz, this.rotation[0], this.rotation[1], this.rotation[2]);
 		const combinedMVP = MatrixMult(mvp, localMV);
 		this.drawer.draw(combinedMVP, localMV, normalMat);
+	}
+
+	setPowerLevel(p){
+			this.drawer.setPowerLevel(p);
 	}
 }
 
@@ -162,6 +170,16 @@ function AnimateScene(now) {
     const dt = (now - lastFrameTime) / 1000.0;
     lastFrameTime = now;
 
+    if(aiming){
+        powerTimer += dt;
+        const phase = (powerTimer/POWER_PERIOD)*2.0*Math.PI;
+        const t = 0.5*(Math.sin(phase)+1.0);
+        currentPower = MIN_POWER + t*(MAX_POWER-MIN_POWER);
+        slingshot.setPowerLevel(t);
+    } else {
+        powerTimer = 0;
+        slingshot.setPowerLevel(0);
+    }
 
     window.flyingManager.update(dt, lights);
 	// sphereDrawer.setLight(lights[0].position, lights[0].intensity);
@@ -172,9 +190,8 @@ function AnimateScene(now) {
         // wait until the initial launch impulse has faded to avoid
         // immediately respawning when the projectile starts below
         // the ground level
-        if (projectile.position &&
-            projectile.position[1] <= -2 &&
-            projectile.launchAcc.len() < 0.05) {
+        if (projectile.position[1] <= -2
+			) {
                 if (projectile.sphereIdx !== null) {
                         // Remove the sphere entirely
                         spheres.splice(projectile.sphereIdx, 1);
@@ -216,6 +233,8 @@ document.addEventListener("keyup", handleAimKeyUp, false);
 function handleAimKeyDown(e){
     if(e.key=="Shift"){
         aiming=true;
+        powerTimer=0;
+
     }
     if(aiming){
         switch(e.key){
@@ -236,7 +255,7 @@ function handleAimKeyUp(e){
     if(e.key=="Shift" && aiming){
         aiming=false;
         const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
-        const acceleration=dir.map(d=>d*LAUNCH_POWER);
+        const acceleration=dir.map(d=>d*currentPower);
         projectile.launch(slingshot.position.slice(), acceleration);
     }
 }

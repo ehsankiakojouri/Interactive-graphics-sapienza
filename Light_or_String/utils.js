@@ -1,4 +1,4 @@
-var lighter = 10;
+var lighter = 1;
 var lights = [
 	{
 		// Placed high above the scene to mimic moonlight
