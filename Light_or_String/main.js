@@ -1,11 +1,6 @@
 const transZmin = 1.001;
 const transZmax = 10;
 
-let isDragging = false;
-let dragStart = null;
-let dragCurrent = null;
-let dragDepth = 3.0;
-let dragOffset = [0, 0];
 let slingshot;
 
 let projectile;
@@ -223,46 +218,11 @@ async function NewScene()
 				canvas.zoom(5*(event.clientY - cy));
 				cy = event.clientY;
 			}
-		} else if ( event.shiftKey ) {
-
-isDragging = true;
-dragStart = [event.clientX, event.clientY];
-dragDepth = WorldToViewDepth(projectile.position);
-
-const slimeScreen = WorldToScreen(projectile.position);
-dragOffset = [
-	event.clientX - slimeScreen[0],
-	event.clientY - slimeScreen[1]
-];
-
-
-canvas.onmousemove = function(event) {
-	// Dragging code using dragDepth instead of fixed 3.0
-	const correctedX = event.clientX - dragOffset[0];
-	const correctedY = event.clientY - dragOffset[1];
-
-	const mouseX = (correctedX / canvas.width) * 2 - 1;
-	const mouseY = 1 - (correctedY / canvas.height) * 2;
-
-	const trans = GetTrans();
-	const invProjView = trans.camToWorld;
-
-	const ndc = [mouseX * dragDepth, mouseY * dragDepth, -dragDepth, 1];
-	const p = [
-		invProjView[0]*ndc[0] + invProjView[4]*ndc[1] + invProjView[8]*ndc[2] + invProjView[12],
-		invProjView[1]*ndc[0] + invProjView[5]*ndc[1] + invProjView[9]*ndc[2] + invProjView[13],
-		invProjView[2]*ndc[0] + invProjView[6]*ndc[1] + invProjView[10]*ndc[2] + invProjView[14]
-	];
-
-	projectile.position = p;
-};
-
-
-	 	} else {
-			canvas.onmousemove = function() {
-				viewRotZ += (cx - event.clientX)/canvas.width*5;
-				viewRotX -= (cy - event.clientY)/canvas.height*5;
-				cx = event.clientX;
+               } else {
+                       canvas.onmousemove = function() {
+                               viewRotZ += (cx - event.clientX)/canvas.width*5;
+                               viewRotX -= (cy - event.clientY)/canvas.height*5;
+                               cx = event.clientX;
 				cy = event.clientY;
 				const eps = 0.01;
 				if ( viewRotX < -0.1 ) viewRotX = -0.1;
@@ -272,14 +232,9 @@ canvas.onmousemove = function(event) {
 			}
 		}
 	}
-	canvas.onmouseup = canvas.onmouseleave = function() {
-		if (isDragging) {
-			isDragging = false;
-			// (launching logic comes later)
-	dragStart = null;
-		}
-		canvas.onmousemove = null;	
-	}
+       canvas.onmouseup = canvas.onmouseleave = function() {
+               canvas.onmousemove = null;
+       }
 
 	const fireflyCount = parseInt(document.getElementById("firefly-input").value);
 	const hornetCount = parseInt(document.getElementById("hornet-input").value);

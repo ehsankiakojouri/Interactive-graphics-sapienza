@@ -9,7 +9,7 @@
 - **Goal**: Shoot hornets using the slingshot to score points.
 - **Avoid**: Hitting fireflies — doing so results in a penalty. They are the source of light at night to see the hornets.
 - **Mechanics**:
-  - Grab and pull the slingshot with the mouse to launch slime projectiles at hornets.
+  - Launch slime projectiles at hornets using the slingshot.
 
 ---
 
