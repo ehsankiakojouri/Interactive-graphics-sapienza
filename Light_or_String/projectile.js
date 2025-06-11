@@ -59,6 +59,10 @@ class Projectile {
         this.damping = 1;
         this.gravity = new Vec3(0,0,0);
         this.restitution = 0.8;
+                // Additional acceleration applied right after launch
+        this.launchAcc = new Vec3(0,0,0);
+        // How quickly the slingshot acceleration fades (per second)
+        this.accFade = 15;
 
         fetch(meshPath)
             .then(res=>res.text())
@@ -154,20 +158,27 @@ class Projectile {
     }
 
     launch(position, acceleration) {
-        // Clone and modify acceleration to avoid mutating the original
-        let acc = acceleration.slice();
-        acc[1] += -9.82;
+        // Reset position and velocities
+        this.position = position.slice();
+        if(this.vel) for(let v of this.vel) v.set(new Vec3(0,0,0));
 
-        console.log("with acceleration:", acc);
-        for (let i = 0; i < this.gravity.length; i++) {
-            this.gravity[i].set(new Vec3(...acc));
-        }
+        // Earth gravity now starts acting
+        this.gravity = new Vec3(0,-9.82,0);
+
+        // Initial acceleration provided by the slingshot
+        this.launchAcc = new Vec3(...acceleration);
+
+        this.active = true;
     }
     update(dt){
         if(!this.pos) return;
         const damping=this.damping*this.stiffness*dt;
-        SimTimeStep(dt,this.pos,this.vel,this.springs,this.stiffness,damping,this.mass,this.gravity,this.restitution);
-        this.updateMesh();
+        // Total acceleration combines gravity and the fading launch impulse
+        const totalAcc = this.gravity.add(this.launchAcc);
+        SimTimeStep(dt,this.pos,this.vel,this.springs,this.stiffness,damping,this.mass,totalAcc,this.restitution);
+
+        // Fade the launch acceleration so that after a short time only gravity remains
+        this.launchAcc.scale(Math.max(0, 1 - this.accFade * dt));        this.updateMesh();
         const c=this.computeCenter();
         this._position=[c.x,c.y,c.z];
         if(this.sphereIdx!==null) spheres[this.sphereIdx].center=this._position.slice();
