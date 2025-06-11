@@ -49,7 +49,7 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 class Projectile {
     constructor(gl, meshPath, texturePath){
         this.drawer = new MeshDrawer(gl);
-        this._position = [1.065,1.25,-4];
+        this._position = [0,1.25,-4];
         this.velocity = [0,0,0];
         this.active = true;
         this.released = false;

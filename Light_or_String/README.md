@@ -10,6 +10,8 @@
 - **Avoid**: Hitting fireflies — doing so results in a penalty. They are the source of light at night to see the hornets.
 - **Mechanics**:
   - Launch slime projectiles at hornets using the slingshot.
+  - Hold <kbd>Shift</kbd> and use the arrow keys to aim. Release <kbd>Shift</kbd> to fire.
+  - If your slime hits the ground, a new projectile automatically spawns at the slingshot.
 
 ---
 

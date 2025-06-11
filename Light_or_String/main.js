@@ -12,6 +12,13 @@ var viewRotX=0, viewRotZ=0, transZ=3;
 var sphereCount = 0;
 var ray_tracer;
 
+// Aiming parameters
+let aiming=false;
+let aimYaw=0;
+let aimPitch=0;
+const AIM_STEP=0.05;
+const LAUNCH_POWER=0.00001;
+
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
 		this.drawer = new MeshDrawer(gl);
@@ -20,16 +27,41 @@ class Slingshot {
 
 		// Load mesh
 		fetch(meshPath)
-			.then(res => res.text())
-			.then(obj => {
-				const mesh = new ObjMesh();
-				mesh.parse(obj);
-				mesh.shiftAndScale([0, 0, 0], 10); // scale and position
-				mesh.computeNormals();
-				const vbufs = mesh.getVertexBuffers();
-				this.drawer.setMesh(vbufs.positionBuffer, vbufs.texCoordBuffer, vbufs.normalBuffer);
-				this.drawer.swapYZ(true);
-			});
+		.then(res => res.text())
+		.then(objText => {
+			const mesh = new ObjMesh();
+			mesh.parse(objText);
+
+			// Compute bounding box:
+			const bbox = mesh.getBoundingBox(); // expects { min: [x,y,z], max: [x,y,z] }
+			const center = [
+			(bbox.min[0] + bbox.max[0]) / 2,
+			(bbox.min[1] + bbox.max[1]) / 2,
+			(bbox.min[2] + bbox.max[2]) / 2
+			];
+
+			// Subtract center from every vertex position so mesh is centered at origin:
+			// Assuming mesh.vpos is an array of [x,y,z] arrays:
+			for (let i = 0; i < mesh.vpos.length; i++) {
+			mesh.vpos[i][0] -= center[0];
+			mesh.vpos[i][1] -= center[1];
+			mesh.vpos[i][2] -= center[2];
+			}
+			// If ObjMesh keeps other derived buffers, after this you should
+			// call mesh.shiftAndScale([0,0,0], scale) or just mesh.computeNormals and get buffers again.
+			// For example:
+			// - Either remove the existing mesh.shiftAndScale call, or replace it with:
+			const scaleFactor = 10;
+			mesh.shiftAndScale([0, 0, 0], scaleFactor);
+			mesh.computeNormals();
+
+			const vbufs = mesh.getVertexBuffers();
+			this.drawer.setMesh(vbufs.positionBuffer, vbufs.texCoordBuffer, vbufs.normalBuffer);
+			this.drawer.swapYZ(true);
+
+			// Optionally store local pivot if needed later, though after recentering pivot=origin.
+			this._meshCenterOffset = center; // for reference if needed (e.g. for repositioning collision spheres)
+		});
 
 		// Load texture
 		const img = new Image();
@@ -133,10 +165,23 @@ function AnimateScene(now) {
 
     window.flyingManager.update(dt, lights);
 	// sphereDrawer.setLight(lights[0].position, lights[0].intensity);
-        sphereDrawer.updateLights();
-        ray_tracer.updateLights();
-        ray_tracer.updateSpheres();
-        projectile.update(dt);
+	sphereDrawer.updateLights();
+	ray_tracer.updateLights();
+	ray_tracer.updateSpheres();
+	projectile.update(dt);
+	if (projectile.position && projectile.position[1] <= -2.5) {
+		if (projectile.sphereIdx !== null) {
+			// Remove the sphere entirely
+			spheres.splice(projectile.sphereIdx, 1);
+			// IMPORTANT: update indices if needed elsewhere
+			projectile.sphereIdx = null;
+		}
+		// Create a new projectile (reset)
+		
+		projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
+		aimYaw=0;
+		aimPitch=0;
+	}
     DrawScene();
     requestAnimationFrame(AnimateScene);
 }
@@ -159,6 +204,37 @@ function keyDownTextField(e) {
 	}
 }
 
+// Aiming controls
+document.addEventListener("keydown", handleAimKeyDown, false);
+document.addEventListener("keyup", handleAimKeyUp, false);
+
+function handleAimKeyDown(e){
+    if(e.key=="Shift"){
+        aiming=true;
+    }
+    if(aiming){
+        switch(e.key){
+            case "ArrowUp":   aimPitch += AIM_STEP; break;
+            case "ArrowDown": aimPitch -= AIM_STEP; break;
+            case "ArrowLeft": aimYaw += AIM_STEP; break;
+            case "ArrowRight": aimYaw -= AIM_STEP; break;
+            default: return;
+        }
+        slingshot.rotation[0]=aimPitch;
+        slingshot.rotation[2]=aimYaw;
+        e.preventDefault();
+        DrawScene();
+    }
+}
+
+function handleAimKeyUp(e){
+    if(e.key=="Shift" && aiming){
+        aiming=false;
+        const dir=[Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), -Math.cos(aimYaw)*Math.cos(aimPitch)];
+        const vel=dir.map(d=>d*LAUNCH_POWER);
+        projectile.launch(slingshot.position.slice(), vel);
+    }
+}
 
 
 // This is the main function that handled WebGL drawing
