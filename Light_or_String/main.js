@@ -19,9 +19,9 @@ let aiming=false;
 let aimYaw=0;
 let aimPitch=0;
 const AIM_STEP=0.05;
-const MIN_POWER=1000;
+const MIN_POWER=400;
 const MAX_POWER=2000;
-const POWER_PERIOD=2.0; // seconds for full oscillation
+const POWER_PERIOD=3.0; // seconds for full oscillation
 let powerTimer=0;
 let currentPower=MIN_POWER;
 let predictedTrajectory=[];
@@ -209,6 +209,8 @@ function AnimateScene(now) {
 		
 		projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
   		slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
+		aimYaw=0;
+		aimPitch=0;
 	}
     DrawScene();
     requestAnimationFrame(AnimateScene);
