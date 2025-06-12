@@ -25,6 +25,8 @@ const POWER_PERIOD=3.0; // seconds for full oscillation
 let powerTimer=0;
 let currentPower=MIN_POWER;
 let predictedTrajectory=[];
+let cameraTarget=[0,0,0];
+
 
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
@@ -212,6 +214,16 @@ function AnimateScene(now) {
 		aimYaw=0;
 		aimPitch=0;
 	}
+
+    if(aiming || projectile.released){
+        let camposition = projectile.position.slice();
+		cameraTarget[0] = camposition[0];
+		cameraTarget[2] = camposition[1];
+		cameraTarget[1] = camposition[2];
+		
+    // }else{
+    //     cameraTarget = [0,0,0];
+    }
     DrawScene();
     requestAnimationFrame(AnimateScene);
 }

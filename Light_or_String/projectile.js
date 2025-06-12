@@ -170,6 +170,7 @@ class Projectile {
         // Initial acceleration provided by the slingshot
         this.launchAcc = new Vec3(...acceleration);
 
+        this.released = true;
         this.active = true;
     }
     update(dt){

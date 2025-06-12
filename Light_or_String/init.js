@@ -169,7 +169,8 @@ function GetTrans()
 	var sx = Math.sin( viewRotX );
 
 	var z = [ cx*sz, -cx*cz, sx ];
-	var c = [ z[0]*transZ, z[1]*transZ, z[2]*transZ ];	
+        var target = (typeof cameraTarget !== 'undefined') ? cameraTarget : [0,0,0];
+        var c = [ target[0] + z[0]*transZ, target[1] + z[1]*transZ, target[2] + z[2]*transZ ];
 	var xlen = Math.sqrt( z[0]*z[0] + z[1]*z[1] );
 	var x = [ -z[1]/xlen, z[0]/xlen, 0 ];
 	var y = [ z[1]*x[2] - z[2]*x[1], z[2]*x[0] - z[0]*x[2], z[0]*x[1] - z[1]*x[0] ];
