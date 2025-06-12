@@ -208,8 +208,7 @@ function AnimateScene(now) {
 		// Create a new projectile (reset)
 		
 		projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
-		aimYaw=0;
-		aimPitch=0;
+  		slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
 	}
     DrawScene();
     requestAnimationFrame(AnimateScene);
