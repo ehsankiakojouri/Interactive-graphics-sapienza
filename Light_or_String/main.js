@@ -27,6 +27,12 @@ let currentPower=MIN_POWER;
 let predictedTrajectory=[];
 let cameraTarget=[0,0,0];
 
+// Thresholding parameters for detecting when the projectile
+// has effectively stopped moving vertically
+const Y_STILL_THRESHOLD = 0.01;
+const STILL_FRAMES = 30;
+let lastProjectileY = null;
+let stillCounter = 0;
 
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
@@ -117,8 +123,9 @@ var fixed_spheres = [
                 center: [ 0, 0, -10001.0 ],
                 radius: 10000.0,
                 mtl: {
-                k_d: [ 0.06, 0.10, 0.16 ], // deeper blue-green diffuse
-        k_s: [ 0.3, 0.3, 0.3 ], // much weaker mirror term
+                // Icy ground material
+                k_d: [ 0.8, 0.85, 0.9 ],
+        k_s: [ 0.3, 0.3, 0.3 ], // keep some reflection
 			n: 10
                 },
                 hidden: false
@@ -196,24 +203,16 @@ function AnimateScene(now) {
 	ray_tracer.updateLights();
 	ray_tracer.updateSpheres();
         projectile.update(dt);
-        // wait until the initial launch impulse has faded to avoid
-        // immediately respawning when the projectile starts below
-        // the ground level
-        if (projectile.position[1] <= -2
-			) {
-                if (projectile.sphereIdx !== null) {
-                        // Remove the sphere entirely
-                        spheres.splice(projectile.sphereIdx, 1);
-			// IMPORTANT: update indices if needed elsewhere
-			projectile.sphereIdx = null;
-		}
-		// Create a new projectile (reset)
-		
-		projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
-  		slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
-		aimYaw=0;
-		aimPitch=0;
-	}
+
+        // Compute vertical motion delta for reset logic
+        if(lastProjectileY !== null){
+            const dy = Math.abs(projectile.position[1] - lastProjectileY);
+            if(dy < Y_STILL_THRESHOLD && projectile.released) ++stillCounter; else stillCounter = 0;
+            if(stillCounter > STILL_FRAMES){
+                resetProjectileAndSlingshot();
+            }
+        }
+        lastProjectileY = projectile.position[1];
 
     if(aiming || projectile.released){
         let camposition = projectile.position.slice();

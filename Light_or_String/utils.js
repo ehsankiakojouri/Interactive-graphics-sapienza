@@ -1,11 +1,11 @@
-var lighter = 1;
+var lighter = 0.25;
 var lights = [
 	{
 		// Placed high above the scene to mimic moonlight
-		position:  [ 0, 8, 5 ],
+		position:  [ 0, 800, 500 ],
 		// Slight bluish tint to resemble a night moon
 		intensity: [ 0.7*lighter, 0.7*lighter, 1.4*lighter ],
-		radius: 0.5
+		radius: 4.0
 	}
 ];
 
@@ -176,4 +176,16 @@ function hsvToRgb(h, s, v) {
         case 5: r = v, g = p, b = q; break;
     }
     return [r, g, b];
+}
+function resetProjectileAndSlingshot(){
+    if(projectile.sphereIdx !== null){
+        spheres.splice(projectile.sphereIdx, 1);
+        projectile.sphereIdx = null;
+    }
+    projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
+    slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
+    aimYaw = 0;
+    aimPitch = 0;
+    lastProjectileY = null;
+    stillCounter = 0;
 }

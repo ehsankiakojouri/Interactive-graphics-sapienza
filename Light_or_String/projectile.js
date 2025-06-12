@@ -55,7 +55,7 @@ class Projectile {
         this.released = false;
         this.sphereIdx = null;
         this.mass = 0.1;
-        this.stiffness = 1;
+        this.stiffness = 1.5;
         this.damping = 1;
         this.gravity = new Vec3(0,0,0);
         // Constant Earth gravity used for predictions and once launched
