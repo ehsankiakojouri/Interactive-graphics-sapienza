@@ -126,6 +126,12 @@ function UpdateCanvasSize()
 	const height = (canvas.height / pixelRatio);
 	canvas.style.width  = width  + 'px';
 	canvas.style.height = height + 'px';
+	if(typeof overlayCanvas !== 'undefined' && overlayCanvas){
+			overlayCanvas.width = canvas.width;
+			overlayCanvas.height = canvas.height;
+			overlayCanvas.style.width = width + 'px';
+			overlayCanvas.style.height = height + 'px';
+	}
 	gl.viewport( 0, 0, canvas.width, canvas.height );
 	UpdateProjectionMatrix();
 }

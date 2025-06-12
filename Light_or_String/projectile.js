@@ -58,6 +58,8 @@ class Projectile {
         this.stiffness = 1;
         this.damping = 1;
         this.gravity = new Vec3(0,0,0);
+        // Constant Earth gravity used for predictions and once launched
+        this.baseGravity = new Vec3(0,-100,0);
         this.restitution = 0.8;
                 // Additional acceleration applied right after launch
         this.launchAcc = new Vec3(0,0,0);
@@ -163,7 +165,7 @@ class Projectile {
         if(this.vel) for(let v of this.vel) v.set(new Vec3(0,0,0));
 
         // Earth gravity now starts acting
-        this.gravity = new Vec3(0,-2,0);
+        this.gravity = this.baseGravity.copy();
 
         // Initial acceleration provided by the slingshot
         this.launchAcc = new Vec3(...acceleration);
@@ -185,6 +187,30 @@ class Projectile {
         this.checkHits();
     }
 
+
+    // Predict future center positions without affecting the actual simulation
+    // dt: time step, steps: number of simulation steps to advance
+    predictTrajectory(dt, steps, launchAcc){
+        if(!this.pos) return [];
+        const simPos = this.pos.map(p=>p.copy());
+        const simVel = this.vel.map(v=>v.copy());
+        let simLaunchAcc = launchAcc ? new Vec3(...launchAcc) : this.launchAcc.copy();
+        let acc = this.baseGravity.add(simLaunchAcc);
+        const path = [];
+        for(let s=0; s<steps; s++){
+            const damping = this.damping*this.stiffness*dt;
+            SimTimeStep(dt, simPos, simVel, this.springs,
+                        this.stiffness, damping, this.mass, acc,
+                        this.restitution);
+            simLaunchAcc.scale(Math.max(0, 1 - this.accFade*dt));
+            acc = this.baseGravity.add(simLaunchAcc);
+            const c = new Vec3(0,0,0);
+            for(const p of simPos) c.inc(p);
+            c.scale(1/simPos.length);
+            path.push([c.x, c.z, c.y]);
+        }
+        return path;
+    }
     checkHits(){
         if(typeof window==='undefined'||!window.flyingManager) return;
         const mgr=window.flyingManager;

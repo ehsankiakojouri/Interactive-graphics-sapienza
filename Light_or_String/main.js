@@ -11,6 +11,8 @@ var environmentTexture;
 var viewRotX=0, viewRotZ=0, transZ=3;
 var sphereCount = 0;
 var ray_tracer;
+var overlayCanvas, overlayCtx;
+
 
 // Aiming parameters
 let aiming=false;
@@ -22,6 +24,7 @@ const MAX_POWER=2000;
 const POWER_PERIOD=2.0; // seconds for full oscillation
 let powerTimer=0;
 let currentPower=MIN_POWER;
+let predictedTrajectory=[];
 
 class Slingshot {
 	constructor(gl, meshPath, texturePath) {
@@ -176,6 +179,10 @@ function AnimateScene(now) {
         const t = 0.5*(Math.sin(phase)+1.0);
         currentPower = MIN_POWER + t*(MAX_POWER-MIN_POWER);
         slingshot.setPowerLevel(t);
+        const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
+        const acceleration=dir.map(d=>d*currentPower);
+        predictedTrajectory = projectile.predictTrajectory(0.016, 150, acceleration);
+        window.predictedTrajectory = predictedTrajectory;
     } else {
         powerTimer = 0;
         slingshot.setPowerLevel(0);
@@ -284,8 +291,26 @@ function DrawScene() {
 		window.flyingManager.draw(mvp, mv, normalMat);
 	}
 	slingshot.draw(mvp, mv, normalMat);
-	projectile.draw(mvp, mv, normalMat);
+        projectile.draw(mvp, mv, normalMat);
 
+        if(overlayCtx){
+            overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+            if(aiming && predictedTrajectory.length){
+                drawPredictedPath(predictedTrajectory);
+            }
+        }
+
+}
+
+function drawPredictedPath(path){
+    overlayCtx.beginPath();
+    overlayCtx.strokeStyle = 'rgba(255,255,0,0.7)';
+    overlayCtx.lineWidth = 2;
+    for(let i=0;i<path.length;i++){
+        const [sx,sy] = WorldToScreen(path[i]);
+        if(i===0) overlayCtx.moveTo(sx,sy); else overlayCtx.lineTo(sx,sy);
+    }
+    overlayCtx.stroke();
 }
 
 
@@ -299,10 +324,13 @@ function WindowResize()
 
 async function NewScene()
 {
-	var c = document.getElementById('controls');
-	c.style.display = 'none';
-	InitWebGL();
-	canvas.zoom = function( s ) {
+        var c = document.getElementById('controls');
+        c.style.display = 'none';
+        InitWebGL();
+        overlayCanvas = document.getElementById('overlay');
+        overlayCtx = overlayCanvas.getContext('2d');
+        UpdateCanvasSize();
+        canvas.zoom = function( s ) {
 		transZ *= s/canvas.height + 1;
 		if ( transZ < transZmin ) transZ = transZmin;
 		if ( transZ > transZmax ) transZ = transZmax;
