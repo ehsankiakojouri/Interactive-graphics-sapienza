@@ -202,7 +202,7 @@ class SphereDrawer extends SphereProg {
 }
 
 class GlowSprite {
-    constructor(baseRadius = 0.7, color = [0.6, 0.9, 1.3]) {
+    constructor(baseRadius = 1, color = [0.6, 0.9, 1.3]) {
         this.baseR  = baseRadius;
         // this.color = color;
 		// In GlowSprite constructor or firefly init

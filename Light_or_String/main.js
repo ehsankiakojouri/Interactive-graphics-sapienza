@@ -12,6 +12,7 @@ var viewRotX=0, viewRotZ=0, transZ=3;
 var sphereCount = 0;
 var ray_tracer;
 var overlayCanvas, overlayCtx;
+let score = 0;
 
 
 // Aiming parameters
@@ -275,7 +276,7 @@ function handleAimKeyUp(e){
         aiming=false;
         const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
         const acceleration=dir.map(d=>d*currentPower);
-        projectile.launch(slingshot.position.slice(), acceleration);
+        projectile.launch(acceleration);
     }
 }
 
@@ -338,6 +339,8 @@ async function NewScene()
 {
         var c = document.getElementById('controls');
         c.style.display = 'none';
+		score = 0;
+        updateScore(0);
         InitWebGL();
         overlayCanvas = document.getElementById('overlay');
         overlayCtx = overlayCanvas.getContext('2d');

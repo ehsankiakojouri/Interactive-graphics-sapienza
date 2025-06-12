@@ -74,6 +74,7 @@ class Projectile {
                 const bbox = mesh.getBoundingBox();
                 const size=[bbox.max[0]-bbox.min[0],bbox.max[1]-bbox.min[1],bbox.max[2]-bbox.min[2]];
                 const diag=Math.sqrt(size[0]*size[0]+size[1]*size[1]+size[2]*size[2]);
+                // const scale=1.5;
                 const scale=0.5;
                 mesh.shiftAndScale([0,0,0],scale);
                 mesh.computeNormals();
@@ -159,7 +160,7 @@ class Projectile {
         this.drawer.setMesh(this.buffers.positionBuffer,this.buffers.texCoordBuffer,this.buffers.normalBuffer);
     }
 
-    launch(position, acceleration) {
+    launch(acceleration) {
         // Reset position and velocities
         //this.position = position.slice();
         if(this.vel) for(let v of this.vel) v.set(new Vec3(0,0,0));
@@ -224,8 +225,10 @@ class Projectile {
             const fr=(f.radius||0.3)+this.radius;
             if(dx*dx+dy*dy+dz*dz <= fr*fr){
                 if(f.isFirefly){
+                    if(window.updateScore) window.updateScore(-1);
                     if(mgr.killFireflyByRef) mgr.killFireflyByRef(f);
                 }else{
+                    if(window.updateScore) window.updateScore(1);
                     const i=mgr.hornets.indexOf(f);
                     if(i!==-1) mgr.hornets.splice(i,1);
                 }
