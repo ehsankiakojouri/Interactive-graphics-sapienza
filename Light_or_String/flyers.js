@@ -169,7 +169,6 @@ if (this.isFirefly) {
 	// }
 
 	setTextureFromFile(imgFilePath) {
-		console.log("Loaded texture", imgFilePath);
 		const img = new Image();
 		img.onload = () => {
 			this.lowDrawer.setTexture(img);
