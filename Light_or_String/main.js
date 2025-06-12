@@ -221,8 +221,8 @@ function AnimateScene(now) {
 		cameraTarget[2] = camposition[1];
 		cameraTarget[1] = camposition[2];
 		
-    // }else{
-    //     cameraTarget = [0,0,0];
+    }else{
+        cameraTarget = [0,0,0];
     }
     DrawScene();
     requestAnimationFrame(AnimateScene);
