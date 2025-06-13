@@ -242,6 +242,7 @@ function keyDownTextField(e) {
 			DrawScene();
 		}
 		head.appendChild(script);
+		console.log('New script loaded.');
 	}
 }
 

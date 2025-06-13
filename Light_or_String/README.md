@@ -1,4 +1,4 @@
-# 🕹️ Light or Sting (Final)
+# 🕹️ Light or Sting (incomplete)
 
 **Light or Sting** is a real-time interactive game developed as part of the **Interactive Graphics** course at **Sapienza University of Rome**. In this game, players use a virtual **slingshot** to eliminate aggressive hornets while carefully avoiding friendly fireflies that illuminate the scene. The game challenges the player's reflexes and attention to detail, blending gameplay with basic interactive graphics principles.
 
@@ -58,4 +58,4 @@ All assets are used under their respective licenses and credited properly.
 
 ## 🚀 Running the Game
 
-Open `index.html` with a modern WebGL-enabled browser.
+The game is web-based and can be run in a modern browser.
