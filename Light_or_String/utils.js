@@ -1,11 +1,11 @@
-var lighter = 1;
+var lighter = 0.25;
 var lights = [
 	{
 		// Placed high above the scene to mimic moonlight
-		position:  [ 0, 8, 5 ],
+		position:  [ 0, 800, 500 ],
 		// Slight bluish tint to resemble a night moon
 		intensity: [ 0.7*lighter, 0.7*lighter, 1.4*lighter ],
-		radius: 0.5
+		radius: 4.0
 	}
 ];
 
@@ -177,12 +177,20 @@ function hsvToRgb(h, s, v) {
     }
     return [r, g, b];
 }
-function updateTrajectory(){
-    if(!trajectory||!aiming) { if(trajectory) trajectory.clear(); return; }
-    const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch-Math.PI/2), Math.sin(aimPitch-Math.PI/2), Math.cos(aimYaw)*Math.cos(aimPitch-Math.PI/2)];
-    const acc=dir.map(d=>d*currentPower);
-    const steps=40;
-    const dt=0.02;
-    const points=projectile.predictPath(slingshot.position.slice(), acc, steps, dt);
-    trajectory.update(points);
+function resetProjectileAndSlingshot(){
+    if(projectile.sphereIdx !== null){
+        spheres.splice(projectile.sphereIdx, 1);
+        projectile.sphereIdx = null;
+    }
+    projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
+    slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
+    aimYaw = 0;
+    aimPitch = 0;
+    lastProjectileY = null;
+    stillCounter = 0;
+}
+function updateScore(delta) {
+    score += delta;
+    const el = document.getElementById('score');
+    if (el) el.textContent = 'Score: ' + score;
 }
