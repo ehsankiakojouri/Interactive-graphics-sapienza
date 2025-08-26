@@ -336,9 +336,12 @@ function WindowResize()
 
 
 async function NewScene()
-{
+{		
+		// Hide controls
         var c = document.getElementById('controls');
         c.style.display = 'none';
+
+		// set initial values
 		score = 0;
         updateScore(0);
         InitWebGL();
