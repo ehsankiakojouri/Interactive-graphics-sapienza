@@ -7,16 +7,16 @@
 
 <!-- ── Sphere mesh ------------------------------------------------------- -->
 <script id="sphereVS" type="x-shader/x-vertex">
-attribute vec3 p;
-uniform mat4  mvp;
-uniform vec3  center;
-uniform float radius;
-varying vec3 pos;
-varying vec3 normal;
+attribute vec3 p;      // sphere vertex on a unit sphere
+uniform mat4  mvp;     // model-view-projection matrix
+uniform vec3  center;  // sphere center (world)
+uniform float radius;  // sphere radius
+varying vec3 pos;      // world-space position (to fragment)
+varying vec3 normal;   // world-space normal (to fragment)
 void main() {
-    pos = p*radius + center;
-    gl_Position = mvp * vec4(pos,1);
-    normal = p;
+    pos = p*radius + center;         // scale & translate unit sphere
+    gl_Position = mvp * vec4(pos,1); // to clip space
+    normal = p;                      // unit-sphere normal = position on unit sphere
 }
 </script>
 
@@ -24,15 +24,16 @@ void main() {
 precision mediump float;
 struct Material { vec3 k_d; vec3 k_s; float n; };
 struct Light    { vec3 position; vec3 intensity; float radius; };
-uniform samplerCube envMap;
-uniform Light    light;
-uniform vec3     campos;
-uniform Material mtl;
-varying vec3 pos, normal;
+uniform samplerCube envMap; // cubemap for reflections
+uniform Light    light;     // single point light
+uniform vec3     campos;    // camera position (world)
+uniform Material mtl;       // material params
+varying vec3 pos, normal;   // from VS
 void main() {
-    vec3 nrm = normalize(normal);
-    vec3 view = normalize(campos - pos);
+    vec3 nrm = normalize(normal);          // unit normal
+    vec3 view = normalize(campos - pos);   // to camera
     vec3 color = vec3(0.0);
+
 
     vec3 L = normalize(light.position - pos);
     float c = dot(nrm, L);
@@ -54,15 +55,17 @@ void main() {
 
 <!-- ── Full-screen ray-gen quad (env map) ------------------------------- -->
 <script id="raytraceVS" type="x-shader/x-vertex">
-attribute vec3 p;
-uniform mat4 proj, c2w;
-varying vec3 ray_pos, ray_dir;
+attribute vec3 p;      // position in camera space plane
+uniform mat4 proj;      // projection matrix
+uniform mat4 c2w;      // camera-to-world matrix
+varying vec3 ray_pos;  // world ray origin
+varying vec3 ray_dir;  // world ray direction
 void main() {
-    gl_Position = proj * vec4(p,1);
-    vec4 rp = c2w * vec4(0,0,0,1);
+    gl_Position = proj * vec4(p,1);       // draw the screen-plane triangle(s)
+    vec4 rp = c2w * vec4(0,0,0,1);        // camera origin in world space
     ray_pos = rp.xyz;
-    vec4 rd = c2w * vec4(p,1);
-    ray_dir = rd.xyz - ray_pos;
+    vec4 rd = c2w * vec4(p,1);            // a point on the camera plane in world
+    ray_dir = rd.xyz - ray_pos;           // direction for this pixel
 }
 </script>
 
@@ -71,7 +74,7 @@ precision mediump float;
 varying vec3 ray_dir;
 uniform samplerCube envMap;
 void main() {
-    gl_FragColor = textureCube(envMap, ray_dir.xzy);
+    gl_FragColor = textureCube(envMap, ray_dir.xzy); // sample cubemap
 }
 </script>
 
@@ -147,6 +150,7 @@ void main()
     gl_FragColor = vec4(color, 1.0);
 }
 </script>
+<!--/ ── Will-o’-Wisp halo ( **NEW** ) ------------------------------------ -->
 
 <head>
   <link rel="stylesheet" href="styles.css">

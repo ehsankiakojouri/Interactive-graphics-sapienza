@@ -96,16 +96,16 @@ function TriSphere(subdiv)
 var triSphere = {
 	init()
 	{
-		var b = TriSphere(20);
+		var b = TriSphere(20); // create vertices/indices
 		this.pbuf = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.pbuf);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(b.pos), gl.STATIC_DRAW);
 		this.ebuf = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebuf);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(b.elems), gl.STATIC_DRAW);
-		this.count = b.elems.length;
+		this.count = b.elems.length; // index count
 	},
-	draw( vp )
+	draw( vp ) // vp = attribute location for 'p'
 	{
 		gl.bindBuffer( gl.ARRAY_BUFFER, this.pbuf );
 		gl.vertexAttribPointer( vp, 3, gl.FLOAT, false, 0, 0 );
@@ -118,7 +118,7 @@ var triSphere = {
 class SphereProg
 {
 	init()
-	{
+	{    // cache uniform/attribute locations
 		this.mvp     = gl.getUniformLocation( this.prog, 'mvp' );
 		this.campos  = gl.getUniformLocation( this.prog, 'campos' );
 		this.center  = gl.getUniformLocation( this.prog, 'center' );
@@ -129,12 +129,12 @@ class SphereProg
 		this.vp      = gl.getAttribLocation ( this.prog, 'p' );
 	}
 	setTrans( mvp, campos )
-	{
+	{ // set per-frame transforms
 		gl.useProgram( this.prog );
 		gl.uniformMatrix4fv( this.mvp, false, mvp );
 		gl.uniform3fv( this.campos, campos );
 	}
-        setLight( pos, intens, radius )
+        setLight( pos, intens, radius ) // set light uniforms once
         {
                 gl.useProgram( this.prog );
                 gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.position'  ), pos    );
@@ -142,7 +142,7 @@ class SphereProg
                 gl.uniform1f ( gl.getUniformLocation( this.prog, 'light.radius'    ), radius );
         }
 	draw( sphere )
-	{
+	{ // set per-object uniforms and draw mesh
 		gl.useProgram( this.prog );
 		gl.uniform3fv( this.center,  sphere.center  );
 		gl.uniform1f ( this.radius,  sphere.radius  );
@@ -152,16 +152,6 @@ class SphereProg
 		triSphere.draw( this.vp );
 	}
 };
-
-// class SphereDrawer extends SphereProg
-// {
-// 	constructor()
-// 	{
-// 		super();
-// 		this.prog = InitShaderProgramFromScripts( 'sphereVS', 'sphereFS' );
-// 		this.init();
-// 	}
-// };
 
 class SphereDrawer extends SphereProg {
     constructor() { super(); this.recompile(); }

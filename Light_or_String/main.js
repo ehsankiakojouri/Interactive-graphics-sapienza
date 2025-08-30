@@ -1,14 +1,14 @@
-const transZmin = 1.001;
-const transZmax = 10;
+const transZmin = 1.001;     // camera zoom min
+const transZmax = 10;        // camera zoom max
 
 let slingshot;
 
 let projectile;
 var sphereDrawer;
 var canvas, gl;
-var perspectiveMatrix;	// perspective projection matrix
-var environmentTexture;
-var viewRotX=0, viewRotZ=0, transZ=3;
+var perspectiveMatrix;					// perspective projection matrix 4x4 projection
+var environmentTexture; 				// GL cubemap
+var viewRotX=0, viewRotZ=0, transZ=3; 	// camera controls
 var sphereCount = 0;
 var ray_tracer;
 var overlayCanvas, overlayCtx;
@@ -112,7 +112,7 @@ var background = {
 		gl.uniformMatrix4fv( gl.getUniformLocation( this.prog, 'proj' ), false, perspectiveMatrix );
 	},
 	draw( trans )
-	{
+	{ // draws a fullscreen quad for the sky or environment map, disabling depth writes so geometry renders in front of it
 		gl.depthMask( false );
 		screenQuad.draw( this.prog, trans );
 		gl.depthMask( true );
@@ -120,7 +120,7 @@ var background = {
 };
 
 var fixed_spheres = [
-        {
+        { // big “ground sphere”
                 center: [ 0, 0, -10001.0 ],
                 radius: 10000.0,
                 mtl: {
@@ -133,7 +133,7 @@ var fixed_spheres = [
         }
 ];
 
-var spheres = fixed_spheres.slice();
+var spheres = fixed_spheres.slice(); // working array
 
 
 const raytraceFS_header = `
@@ -228,24 +228,6 @@ function AnimateScene(now) {
     requestAnimationFrame(AnimateScene);
 }
 
-document.addEventListener("keydown", keyDownTextField, false);
-function keyDownTextField(e) {
-	var keyCode = e.keyCode;
-	if(keyCode==115) {	// F4
-		document.getElementById('includedscript').remove();
-		var head = document.getElementsByTagName('head')[0];
-		var script = document.createElement('script');
-		script.src= 'ray.js';
-		script.id = 'includedscript';
-		script.onload = function() {
-			ray_tracer.init();
-			DrawScene();
-		}
-		head.appendChild(script);
-		console.log('New script loaded.');
-	}
-}
-
 // Aiming controls
 document.addEventListener("keydown", handleAimKeyDown, false);
 document.addEventListener("keyup", handleAimKeyUp, false);
@@ -299,19 +281,17 @@ function DrawScene() {
 	// 2. Draw raytraced spheres (like the floor)
 	ray_tracer.draw(mvp, trans);
 
-	// 3. Draw animated meshes (fireflies and hornets)
-	if (window.flyingManager) {
-		window.flyingManager.draw(mvp, mv, normalMat);
-	}
+	// 3. Draw animated meshes
+	window.flyingManager.draw(mvp, mv, normalMat);
 	slingshot.draw(mvp, mv, normalMat);
-        projectile.draw(mvp, mv, normalMat);
+	projectile.draw(mvp, mv, normalMat);
 
-        if(overlayCtx){
-            overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
-            if(aiming && predictedTrajectory.length){
-                drawPredictedPath(predictedTrajectory);
-            }
-        }
+	if(overlayCtx){
+		overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+		if(aiming && predictedTrajectory.length){
+			drawPredictedPath(predictedTrajectory);
+		}
+	}
 
 }
 
@@ -337,18 +317,19 @@ function WindowResize()
 
 async function NewScene()
 {		
-		// Hide controls
-        var c = document.getElementById('controls');
-        c.style.display = 'none';
+	// Hide controls
+	var c = document.getElementById('controls');
+	c.style.display = 'none';
 
-		// set initial values
-		score = 0;
-        updateScore(0);
-        InitWebGL();
-        overlayCanvas = document.getElementById('overlay');
-        overlayCtx = overlayCanvas.getContext('2d');
-        UpdateCanvasSize();
-        canvas.zoom = function( s ) {
+	// set initial values
+	score = 0;
+	updateScore(0);
+	InitWebGL();
+	overlayCanvas = document.getElementById('overlay');
+	overlayCtx = overlayCanvas.getContext('2d');
+	// zoom, wheel, and mouse‐drag handlers
+	// each interaction updates the projection matrix and redraws the scene
+	canvas.zoom = function( s ) {
 		transZ *= s/canvas.height + 1;
 		if ( transZ < transZmin ) transZ = transZmin;
 		if ( transZ > transZmax ) transZ = transZmax;
@@ -382,15 +363,18 @@ async function NewScene()
                canvas.onmousemove = null;
        }
 
+	// firefly and hornet counts from the HTML inputs
 	const fireflyCount = parseInt(document.getElementById("firefly-input").value);
 	const hornetCount = parseInt(document.getElementById("hornet-input").value);
+
 	InitScene(fireflyCount, hornetCount); // creates lights[]
 	ray_tracer  = new RayTracer();
-	ray_tracer.init();              // now #define NUM_LIGHTS is correct
-	sphereDrawer = new SphereDrawer();             // #define NUM_LIGHTS ok for water
+	ray_tracer.init();
+	sphereDrawer = new SphereDrawer();
 	projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
   	slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
 
+	// Start rendering loop
 	requestAnimationFrame(AnimateScene);
 	DrawScene();
 }
