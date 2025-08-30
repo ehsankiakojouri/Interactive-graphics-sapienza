@@ -189,8 +189,6 @@ function resetProjectileAndSlingshot(){
     lastProjectileY = null;
     stillCounter = 0;
 }
-
-// Set score display value
 function updateScore(delta) {
     score += delta;
     const el = document.getElementById('score');
