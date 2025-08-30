@@ -292,7 +292,6 @@ function DrawScene() {
 			drawPredictedPath(predictedTrajectory);
 		}
 	}
-
 }
 
 function drawPredictedPath(path){
@@ -324,10 +323,9 @@ async function NewScene()
 	// set initial values
 	score = 0;
 	updateScore(0);
-	InitWebGL();
 	overlayCanvas = document.getElementById('overlay');
 	overlayCtx = overlayCanvas.getContext('2d');
-	UpdateCanvasSize();
+	InitWebGL();
 	// zoom, wheel, and mouse‐drag handlers
 	// each interaction updates the projection matrix and redraws the scene
 	canvas.zoom = function( s ) {
@@ -375,7 +373,8 @@ async function NewScene()
 	projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
   	slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
 
-	// Start rendering loop
-	requestAnimationFrame(AnimateScene);
+	// clears the frame buffers and renders the scene
 	DrawScene();
+	// updates the simulation state (physics, animations, game logic)
+	requestAnimationFrame(AnimateScene);
 }
