@@ -327,6 +327,7 @@ async function NewScene()
 	InitWebGL();
 	overlayCanvas = document.getElementById('overlay');
 	overlayCtx = overlayCanvas.getContext('2d');
+	UpdateCanvasSize();
 	// zoom, wheel, and mouse‐drag handlers
 	// each interaction updates the projection matrix and redraws the scene
 	canvas.zoom = function( s ) {
