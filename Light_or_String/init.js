@@ -1,4 +1,4 @@
-function InitScene(fireflyCount = 10, hornetCount = 10) {
+function InitFlyers(fireflyCount = 10, hornetCount = 10) {
 	window.flyingManager = new FlyingManager();
 	
 	fireflyHighData = 'firefly/firefly_high.obj';
@@ -28,7 +28,6 @@ function InitScene(fireflyCount = 10, hornetCount = 10) {
 					radius: 0.3
 			});
 			firefly.light_id = id;                      // store for quick look-up
-			DrawScene();
 		});
 	}
 
@@ -44,7 +43,6 @@ function InitScene(fireflyCount = 10, hornetCount = 10) {
 			hornet.setMeshFromFile(hornetHighData, 'high')
 		]).then(() => {
 			flyingManager.addHornet(hornet);
-			DrawScene();
 		});
 	}
 	flyingManager.draw()
@@ -93,9 +91,15 @@ function InitEnvironmentMap()
 	gl.texParameteri( gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR );
 }
 
-// Called once to initialize
+// Called to initialize
 function InitWebGL()
 {
+	// set initial values
+	score = 0;
+	updateScore(0);
+	overlayCanvas = document.getElementById('overlay');
+	overlayCtx = overlayCanvas.getContext('2d');
+
 	// Initialize the WebGL canvas
 	canvas = document.getElementById("canvas");
 	canvas.oncontextmenu = function() {return false;};
@@ -104,7 +108,10 @@ function InitWebGL()
 		alert("Unable to initialize WebGL. Your browser or machine may not support it.");
 		return;
 	}
-	
+	// zoom with wheel and mouse‐drag handlers
+	// each interaction updates the projection matrix and redraws the scene
+	mouseInteraction(canvas);
+
 	// Initialize settings
 	gl.clearColor(0,0,0,0);
 	gl.enable(gl.DEPTH_TEST);
@@ -118,14 +125,21 @@ function InitWebGL()
 	// ensuring the environment is ready before other objects are drawn
 	background.init();
 
-	ray_tracer = new RayTracer;
-
+	// land drawer (modified project6)
 	sphereDrawer = new SphereDrawer;
-    sphereDrawer.setLight( lights[0].position, lights[0].intensity, lights[0].radius );
+    sphereDrawer.updateLights();
 
-	meshDrawer = new MeshDrawer();
+	// firefly and hornet counts from the HTML inputs
+	const fireflyCount = parseInt(document.getElementById("firefly-input").value);
+	const hornetCount = parseInt(document.getElementById("hornet-input").value);
+	InitFlyers(fireflyCount, hornetCount);
 
+	projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
+  	slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
+
+	ray_tracer = new RayTracer;
 	UpdateCanvasSize();
+	ray_tracer.init();
 }
 
 // Called every time the window size is changed.

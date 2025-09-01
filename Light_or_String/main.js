@@ -104,7 +104,7 @@ class Slingshot {
 var background = {
 	init()
 	{
-		this.prog = InitShaderProgramFromScripts( 'raytraceVS', 'envFS' );
+		this.prog = InitShaderProgramFromScripts( 'ennvRaytraceVS', 'envFS' );
 	},
 	updateProj()
 	{
@@ -176,6 +176,98 @@ const raytraceFS_secondary = `
 	}
 `;
 
+// Aiming controls
+document.addEventListener("keydown", handleAimKeyDown, false);
+document.addEventListener("keyup", handleAimKeyUp, false);
+
+function handleAimKeyDown(e){
+    if(!projectile.released && e.key=="Shift"){
+        aiming=true;
+        powerTimer=0;
+
+    }
+    if(aiming){
+        switch(e.key){
+            case "ArrowUp":   aimPitch += AIM_STEP; break;
+            case "ArrowDown": aimPitch -= AIM_STEP; break;
+            case "ArrowLeft": aimYaw += AIM_STEP; break;
+            case "ArrowRight": aimYaw -= AIM_STEP; break;
+            default: return;
+        }
+        slingshot.rotation[0]=aimPitch;
+        slingshot.rotation[2]=aimYaw;
+        e.preventDefault();
+        DrawScene();
+    }
+}
+
+function handleAimKeyUp(e){
+    if(e.key=="Shift" && aiming){
+        aiming=false;
+        const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
+        const acceleration=dir.map(d=>d*currentPower);
+        projectile.launch(acceleration);
+    }
+}
+
+async function NewScene()
+{		
+	// Hide controls
+	var c = document.getElementById('controls');
+	c.style.display = 'none';
+
+	// Initialize WebGL, mouse controls, environment map, meshes, lights, etc.
+	InitWebGL();
+
+	// Game loop
+	//// clears the frame buffers and renders the scene
+	DrawScene();
+	//// updates the simulation state (physics, animations, game logic)
+	requestAnimationFrame(AnimateScene);
+}
+
+// This is the main function that handled WebGL drawing
+function DrawScene() {
+	gl.flush();
+
+	const trans = GetTrans();
+	const mvp = MatrixMult(perspectiveMatrix, trans.worldToCam);
+	const mv = trans.worldToCam;
+	const normalMat = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+
+	// Clear screen once
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+	// 1. Draw background (sky/environment cube map)
+	background.draw(trans);
+
+	// 2. Draw raytraced spheres (like the floor)
+	ray_tracer.draw(mvp, trans);
+
+	// 3. Draw animated meshes
+	window.flyingManager.draw(mvp, mv, normalMat);
+	slingshot.draw(mvp, mv, normalMat);
+	projectile.draw(mvp, mv, normalMat);
+
+	if(overlayCtx){
+		overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+		if(aiming && predictedTrajectory.length){
+			drawPredictedPath(predictedTrajectory);
+		}
+	}
+}
+
+function drawPredictedPath(path){
+    overlayCtx.beginPath();
+    overlayCtx.strokeStyle = 'rgba(255,255,0,0.7)';
+    overlayCtx.lineWidth = 2;
+    for(let i=0;i<path.length;i++){
+        const [sx,sy] = WorldToScreen(path[i]);
+        if(i===0) overlayCtx.moveTo(sx,sy); else overlayCtx.lineTo(sx,sy);
+    }
+    overlayCtx.stroke();
+}
+
 let lastFrameTime = null;
 function AnimateScene(now) {
     if (!window.flyingManager) return;
@@ -228,153 +320,8 @@ function AnimateScene(now) {
     requestAnimationFrame(AnimateScene);
 }
 
-// Aiming controls
-document.addEventListener("keydown", handleAimKeyDown, false);
-document.addEventListener("keyup", handleAimKeyUp, false);
-
-function handleAimKeyDown(e){
-    if(e.key=="Shift"){
-        aiming=true;
-        powerTimer=0;
-
-    }
-    if(aiming){
-        switch(e.key){
-            case "ArrowUp":   aimPitch += AIM_STEP; break;
-            case "ArrowDown": aimPitch -= AIM_STEP; break;
-            case "ArrowLeft": aimYaw += AIM_STEP; break;
-            case "ArrowRight": aimYaw -= AIM_STEP; break;
-            default: return;
-        }
-        slingshot.rotation[0]=aimPitch;
-        slingshot.rotation[2]=aimYaw;
-        e.preventDefault();
-        DrawScene();
-    }
-}
-
-function handleAimKeyUp(e){
-    if(e.key=="Shift" && aiming){
-        aiming=false;
-        const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
-        const acceleration=dir.map(d=>d*currentPower);
-        projectile.launch(acceleration);
-    }
-}
-
-
-// This is the main function that handled WebGL drawing
-function DrawScene() {
-	gl.flush();
-
-	const trans = GetTrans();
-	const mvp = MatrixMult(perspectiveMatrix, trans.worldToCam);
-	const mv = trans.worldToCam;
-	const normalMat = [1, 0, 0, 0, 1, 0, 0, 0, 1]; // or compute from mv if lighting is directional
-
-	// Clear screen once
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-	// 1. Draw background (sky/environment cube map)
-	background.draw(trans);
-
-	// 2. Draw raytraced spheres (like the floor)
-	ray_tracer.draw(mvp, trans);
-
-	// 3. Draw animated meshes
-	window.flyingManager.draw(mvp, mv, normalMat);
-	slingshot.draw(mvp, mv, normalMat);
-	projectile.draw(mvp, mv, normalMat);
-
-	if(overlayCtx){
-		overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
-		if(aiming && predictedTrajectory.length){
-			drawPredictedPath(predictedTrajectory);
-		}
-	}
-}
-
-function drawPredictedPath(path){
-    overlayCtx.beginPath();
-    overlayCtx.strokeStyle = 'rgba(255,255,0,0.7)';
-    overlayCtx.lineWidth = 2;
-    for(let i=0;i<path.length;i++){
-        const [sx,sy] = WorldToScreen(path[i]);
-        if(i===0) overlayCtx.moveTo(sx,sy); else overlayCtx.lineTo(sx,sy);
-    }
-    overlayCtx.stroke();
-}
-
-
-
 function WindowResize()
 {
 	UpdateCanvasSize();
 	DrawScene();
-}
-
-
-async function NewScene()
-{		
-	// Hide controls
-	var c = document.getElementById('controls');
-	c.style.display = 'none';
-
-	// set initial values
-	score = 0;
-	updateScore(0);
-	overlayCanvas = document.getElementById('overlay');
-	overlayCtx = overlayCanvas.getContext('2d');
-	InitWebGL();
-	// zoom, wheel, and mouse‐drag handlers
-	// each interaction updates the projection matrix and redraws the scene
-	canvas.zoom = function( s ) {
-		transZ *= s/canvas.height + 1;
-		if ( transZ < transZmin ) transZ = transZmin;
-		if ( transZ > transZmax ) transZ = transZmax;
-		UpdateProjectionMatrix();
-		DrawScene();
-	}
-	canvas.onwheel = function() { canvas.zoom(0.3*event.deltaY); }
-	canvas.onmousedown = function() {
-		var cx = event.clientX;
-		var cy = event.clientY;
-		if ( event.ctrlKey ) {
-			canvas.onmousemove = function() {
-				canvas.zoom(5*(event.clientY - cy));
-				cy = event.clientY;
-			}
-               } else {
-                       canvas.onmousemove = function() {
-                               viewRotZ += (cx - event.clientX)/canvas.width*5;
-                               viewRotX -= (cy - event.clientY)/canvas.height*5;
-                               cx = event.clientX;
-				cy = event.clientY;
-				const eps = 0.01;
-				if ( viewRotX < -0.1 ) viewRotX = -0.1;
-				if ( viewRotX > Math.PI/2 - eps ) viewRotX = Math.PI/2 - eps;
-				UpdateProjectionMatrix();
-				DrawScene();
-			}
-		}
-	}
-       canvas.onmouseup = canvas.onmouseleave = function() {
-               canvas.onmousemove = null;
-       }
-
-	// firefly and hornet counts from the HTML inputs
-	const fireflyCount = parseInt(document.getElementById("firefly-input").value);
-	const hornetCount = parseInt(document.getElementById("hornet-input").value);
-
-	InitScene(fireflyCount, hornetCount); // creates lights[]
-	ray_tracer  = new RayTracer();
-	ray_tracer.init();
-	sphereDrawer = new SphereDrawer();
-	projectile = new Projectile(gl, 'slime/slime.obj', 'slime/slime_color.png');
-  	slingshot = new Slingshot(gl, 'slingshot/slingshot.obj', 'slingshot/slingshot_color.png');
-
-	// clears the frame buffers and renders the scene
-	DrawScene();
-	// updates the simulation state (physics, animations, game logic)
-	requestAnimationFrame(AnimateScene);
 }

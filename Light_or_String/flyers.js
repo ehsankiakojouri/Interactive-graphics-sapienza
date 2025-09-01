@@ -11,8 +11,8 @@ class FlyingObject {
 		this.current = this.lowDrawer;
 		this.position = this.getRandomPosition();
 
-                this.glow = null;
-                this.sphereIdx = null;
+		this.glow = null;
+		this.sphereIdx = null;
 
 		    // --- flight brain ---
 		this.seed   = performance.now() ^ Math.floor(Math.random()*1e9); // deterministic per object

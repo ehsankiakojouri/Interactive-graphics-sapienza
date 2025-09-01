@@ -134,13 +134,13 @@ class SphereProg
 		gl.uniformMatrix4fv( this.mvp, false, mvp );
 		gl.uniform3fv( this.campos, campos );
 	}
-        setLight( pos, intens, radius ) // set light uniforms once
-        {
-                gl.useProgram( this.prog );
-                gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.position'  ), pos    );
-                gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.intensity' ), intens );
-                gl.uniform1f ( gl.getUniformLocation( this.prog, 'light.radius'    ), radius );
-        }
+	// setLight( pos, intens, radius ) // set light uniforms once
+	// {
+	// 		gl.useProgram( this.prog );
+	// 		gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.position'  ), pos    );
+	// 		gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.intensity' ), intens );
+	// 		gl.uniform1f ( gl.getUniformLocation( this.prog, 'light.radius'    ), radius );
+	// }
 	draw( sphere )
 	{ // set per-object uniforms and draw mesh
 		gl.useProgram( this.prog );

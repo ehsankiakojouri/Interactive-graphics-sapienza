@@ -205,3 +205,39 @@ function mulberry32(a){
         return ((t ^ t >>> 14) >>> 0) / 4294967296;
     }
 }
+
+function mouseInteraction(canvas) {
+	canvas.zoom = function( s ) {
+		transZ *= s/canvas.height + 1;
+		if ( transZ < transZmin ) transZ = transZmin;
+		if ( transZ > transZmax ) transZ = transZmax;
+		UpdateProjectionMatrix();
+		DrawScene();
+	}
+	canvas.onwheel = function() { canvas.zoom(0.3*event.deltaY); }
+	canvas.onmousedown = function() {
+		var cx = event.clientX;
+		var cy = event.clientY;
+		if ( event.ctrlKey ) {
+			canvas.onmousemove = function() {
+				canvas.zoom(5*(event.clientY - cy));
+				cy = event.clientY;
+			}
+               } else {
+                       canvas.onmousemove = function() {
+                               viewRotZ += (cx - event.clientX)/canvas.width*5;
+                               viewRotX -= (cy - event.clientY)/canvas.height*5;
+                               cx = event.clientX;
+				cy = event.clientY;
+				const eps = 0.01;
+				if ( viewRotX < -0.1 ) viewRotX = -0.1;
+				if ( viewRotX > Math.PI/2 - eps ) viewRotX = Math.PI/2 - eps;
+				UpdateProjectionMatrix();
+				DrawScene();
+			}
+		}
+	}
+	canvas.onmouseup = canvas.onmouseleave = function() {
+			canvas.onmousemove = null;
+	}
+}
