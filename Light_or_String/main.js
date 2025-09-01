@@ -233,7 +233,7 @@ function DrawScene() {
 	const trans = GetTrans();
 	const mvp = MatrixMult(perspectiveMatrix, trans.worldToCam);
 	const mv = trans.worldToCam;
-	const normalMat = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+	const normalMat = [1, 0, 0, 0, 1, 0, 0, 0, 1]; // identity
 
 	// Clear screen once
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
