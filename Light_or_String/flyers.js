@@ -1,11 +1,11 @@
 class FlyingObject {
-	constructor(lowObjMesh, highObjMesh, gl, max_flight_box, min_flight_box, max_obj_box, min_obj_box) {
+	constructor(lowObjMesh, highObjMesh, gl, max_flight_box, min_flight_box, max_obj_box, min_obj_box, isFirefly) {
 		this.max_flight_box = max_flight_box; // bounding box for flight
 		this.min_flight_box = min_flight_box;
 		this.timer = 0;
 		this.max_obj_box = max_obj_box;
 		this.min_obj_box = min_obj_box;
-		this.isFirefly = false; // default to hornet
+		this.isFirefly = isFirefly; // default to hornet
 		this.lowDrawer = new MeshDrawer(gl);
 		this.highDrawer = new MeshDrawer(gl);
 		this.current = this.lowDrawer;

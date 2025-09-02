@@ -30,7 +30,7 @@ let cameraTarget=[0,0,0];
 
 // Thresholding parameters for detecting when the projectile
 // has effectively stopped moving vertically
-const Y_STILL_THRESHOLD = 0.01;
+const Y_STILL_THRESHOLD = 0.04;
 const STILL_FRAMES = 30;
 let lastProjectileY = null;
 let stillCounter = 0;
@@ -104,7 +104,7 @@ class Slingshot {
 var background = {
 	init()
 	{
-		this.prog = InitShaderProgramFromScripts( 'ennvRaytraceVS', 'envFS' );
+		this.prog = InitShaderProgramFromScripts( 'envRaytraceVS', 'envFS' );
 	},
 	updateProj()
 	{
@@ -202,6 +202,7 @@ function handleAimKeyDown(e){
 }
 
 function handleAimKeyUp(e){
+	// compute direction, acceleration from pitch, yaw, (with roll=0 formula) => launch on release
     if(e.key=="Shift" && aiming){
         aiming=false;
         const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
@@ -245,7 +246,7 @@ function DrawScene() {
 	ray_tracer.draw(mvp, trans);
 
 	// 3. Draw animated meshes
-	window.flyingManager.draw(mvp, mv, normalMat);
+	flyingManager.draw(mvp, mv, normalMat);
 	slingshot.draw(mvp, mv, normalMat);
 	projectile.draw(mvp, mv, normalMat);
 
@@ -276,46 +277,32 @@ function AnimateScene(now) {
     lastFrameTime = now;
 
     if(aiming){
+		// sinosoidal power change w.r.t time
         powerTimer += dt;
         const phase = (powerTimer/POWER_PERIOD)*2.0*Math.PI;
         const t = 0.5*(Math.sin(phase)+1.0);
         currentPower = MIN_POWER + t*(MAX_POWER-MIN_POWER);
         slingshot.setPowerLevel(t);
+
+        // direction and acceleration vector from pitch, yaw, (with roll=0 formula)
         const dir=[-Math.sin(aimYaw)*Math.cos(aimPitch), Math.sin(aimPitch), Math.cos(aimYaw)*Math.cos(aimPitch)];
         const acceleration=dir.map(d=>d*currentPower);
         predictedTrajectory = projectile.predictTrajectory(0.016, 150, acceleration);
         window.predictedTrajectory = predictedTrajectory;
+
     } else {
         powerTimer = 0;
         slingshot.setPowerLevel(0);
     }
 
     window.flyingManager.update(dt, lights);
-	// sphereDrawer.setLight(lights[0].position, lights[0].intensity);
 	sphereDrawer.updateLights();
 	ray_tracer.updateLights();
 	ray_tracer.updateSpheres();
-        projectile.update(dt);
+	projectile.update(dt);
+	projectile.resetIfStill();
+	projectile.lockCamIfReleased();
 
-        // Compute vertical motion delta for reset logic
-        if(lastProjectileY !== null){
-            const dy = Math.abs(projectile.position[1] - lastProjectileY);
-            if(dy < Y_STILL_THRESHOLD && projectile.released) ++stillCounter; else stillCounter = 0;
-            if(stillCounter > STILL_FRAMES){
-                resetProjectileAndSlingshot();
-            }
-        }
-        lastProjectileY = projectile.position[1];
-
-    if(aiming || projectile.released){
-        let camposition = projectile.position.slice();
-		cameraTarget[0] = camposition[0];
-		cameraTarget[2] = camposition[1];
-		cameraTarget[1] = camposition[2];
-		
-    }else{
-        cameraTarget = [0,0,0];
-    }
     DrawScene();
     requestAnimationFrame(AnimateScene);
 }

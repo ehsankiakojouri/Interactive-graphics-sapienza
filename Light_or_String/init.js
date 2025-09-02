@@ -13,9 +13,9 @@ function InitFlyers(fireflyCount = 10, hornetCount = 10) {
 			fireflyHighData,
 			gl, max_flight_box,
 			min_flight_box,
-			[3.20344, 3.566142, 2.037548],
-			[-3.204121, 1.347797, -1.995025]);
-		firefly.isFirefly = true; // Mark as firefly for special handling
+			[3.20344, 3.566142, 2.037548], // min obj bbox
+			[-3.204121, 1.347797, -1.995025], // max obj bbox
+			true); // Mark as firefly for special handling
 		Promise.all([
 			firefly.setMeshFromFile(fireflyLowData, 'low',),
 			firefly.setMeshFromFile(fireflyHighData, 'high')
@@ -27,7 +27,7 @@ function InitFlyers(fireflyCount = 10, hornetCount = 10) {
 					intensity: [0.1, 0.1, 0.1],
 					radius: 0.3
 			});
-			firefly.light_id = id;                      // store for quick look-up
+			firefly.light_id = id;		// store for quick look-up
 		});
 	}
 
@@ -36,8 +36,9 @@ function InitFlyers(fireflyCount = 10, hornetCount = 10) {
 				hornetHighData,
 				gl, max_flight_box,
 				min_flight_box, 
-				[2, 5.0, -0.32], 
-				[-2, 0.5, -5.0]);
+				[2, 5.0, -0.32], // min obj bbox
+				[-2, 0.5, -5.0], // max obj bbox
+				false); // Mark as hornet
 		Promise.all([
 			hornet.setMeshFromFile(hornetLowData, 'low'),
 			hornet.setMeshFromFile(hornetHighData, 'high')
@@ -45,7 +46,6 @@ function InitFlyers(fireflyCount = 10, hornetCount = 10) {
 			flyingManager.addHornet(hornet);
 		});
 	}
-	flyingManager.draw()
 }
 
 
@@ -119,7 +119,7 @@ function InitWebGL()
 	// cubemap environment
 	InitEnvironmentMap();
 
-	// sphere drawer setup
+	// create sphere object meshes
 	triSphere.init();
 
 	// ensuring the environment is ready before other objects are drawn

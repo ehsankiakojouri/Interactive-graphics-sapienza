@@ -189,6 +189,30 @@ class Projectile {
         this.checkHits();
     }
 
+    // if projectile is not moving vertically for certain frames, reset for new launch
+    resetIfStill(){
+        if(lastProjectileY !== null){
+            // Compute infinitesimal vertical motion for reset logic
+            const dy = Math.abs(this.position[1] - lastProjectileY);
+            if(dy < Y_STILL_THRESHOLD && this.released) ++stillCounter; else stillCounter = 0;
+            if(stillCounter > STILL_FRAMES){
+                resetProjectileAndSlingshot();
+            }
+        }
+        lastProjectileY = this.position[1];
+    }
+
+	// lock camera to projectile when aiming or released
+    lockCamIfReleased(){
+        if(aiming || this.released){
+            let camposition = this.position.slice();
+            cameraTarget[0] = camposition[0];
+            cameraTarget[2] = camposition[1];
+            cameraTarget[1] = camposition[2];
+        }else{
+            cameraTarget = [0,0,0];
+        }
+    }
 
     // Predict future center positions without affecting the actual simulation
     // dt: time step, steps: number of simulation steps to advance

@@ -126,7 +126,7 @@ class SphereProg
 		this.mtl_k_d = gl.getUniformLocation( this.prog, 'mtl.k_d' );
 		this.mtl_k_s = gl.getUniformLocation( this.prog, 'mtl.k_s' );
 		this.mtl_n   = gl.getUniformLocation( this.prog, 'mtl.n' );
-		this.vp      = gl.getAttribLocation ( this.prog, 'p' );
+		this.vp      = gl.getAttribLocation( this.prog, 'p' );
 	}
 	setTrans( mvp, campos )
 	{ // set per-frame transforms
@@ -134,13 +134,6 @@ class SphereProg
 		gl.uniformMatrix4fv( this.mvp, false, mvp );
 		gl.uniform3fv( this.campos, campos );
 	}
-	// setLight( pos, intens, radius ) // set light uniforms once
-	// {
-	// 		gl.useProgram( this.prog );
-	// 		gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.position'  ), pos    );
-	// 		gl.uniform3fv( gl.getUniformLocation( this.prog, 'light.intensity' ), intens );
-	// 		gl.uniform1f ( gl.getUniformLocation( this.prog, 'light.radius'    ), radius );
-	// }
 	draw( sphere )
 	{ // set per-object uniforms and draw mesh
 		gl.useProgram( this.prog );
@@ -159,7 +152,7 @@ class SphereDrawer extends SphereProg {
     /* re-build when light count changes ---------------------- */
     recompile() {
         const vsSrc = document.getElementById('sphereVS').text;
-        const fsTpl = document.getElementById('sphereFS_multi').text;
+        const fsTpl = document.getElementById('sphereFS').text;
         const fsSrc = `#define NUM_LIGHTS ${lights.length}\n` + fsTpl;
 
         this.prog = InitShaderProgram(vsSrc, fsSrc);
