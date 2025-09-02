@@ -24,8 +24,8 @@ function InitFlyers(fireflyCount = 10, hornetCount = 10) {
 			light_pos = flyingManager.addFirefly(firefly);
 			lights.push({
 					position: light_pos.slice(),  // copy, not ref
-					intensity: [0.1, 0.1, 0.1],
-					radius: 0.3
+					intensity: [0.001, 0.001, 0.001],
+					radius: 0.1
 			});
 			firefly.light_id = id;		// store for quick look-up
 		});
@@ -124,10 +124,6 @@ function InitWebGL()
 
 	// ensuring the environment is ready before other objects are drawn
 	background.init();
-
-	// land drawer (modified project6)
-	sphereDrawer = new SphereDrawer;
-    sphereDrawer.updateLights();
 
 	// firefly and hornet counts from the HTML inputs
 	const fireflyCount = parseInt(document.getElementById("firefly-input").value);

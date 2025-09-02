@@ -57,7 +57,7 @@ class RayTracer
 	}
 	init()
 	{
-		this.initProg( document.getElementById('sphereVS').text, raytraceFS_secondary );
+		this.initProg( document.getElementById('sphereVS').text, raytraceFS_secondary);
 		if ( ! this.prog ) return;
 		this.sphere.prog = this.prog;
 		this.sphere.init();

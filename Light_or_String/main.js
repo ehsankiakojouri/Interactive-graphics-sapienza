@@ -4,7 +4,6 @@ const transZmax = 10;        // camera zoom max
 let slingshot;
 
 let projectile;
-var sphereDrawer;
 var canvas, gl;
 var perspectiveMatrix;					// perspective projection matrix 4x4 projection
 var environmentTexture; 				// GL cubemap
@@ -139,19 +138,6 @@ var spheres = fixed_spheres.slice(); // working array
 const raytraceFS_header = `
 	precision highp float;
 	precision highp int;
-`;
-
-const raytraceFS_primary = `
-	varying vec3 ray_pos;
-	varying vec3 ray_dir;
-
-	void main()
-	{
-		Ray primary_ray;
-		primary_ray.pos = ray_pos;
-		primary_ray.dir = ray_dir;
-		gl_FragColor = RayTracer( primary_ray );
-	}
 `;
 
 const raytraceFS_secondary = `
@@ -296,7 +282,6 @@ function AnimateScene(now) {
     }
 
     window.flyingManager.update(dt, lights);
-	sphereDrawer.updateLights();
 	ray_tracer.updateLights();
 	ray_tracer.updateSpheres();
 	projectile.update(dt);
