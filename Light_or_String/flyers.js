@@ -82,22 +82,22 @@ class FlyingObject {
 	setPosition(pos) {
 		this.position = pos;
 	}
-update(dt, light_id) {
-    this.timer += dt;
+	update(dt, light_id) {
+		this.timer += dt;
 
-    /* mesh LOD swap – unchanged */
-    const useHigh = Math.floor(this.timer * 30) % 2 === 0;
-    this.current  = useHigh ? this.highDrawer : this.lowDrawer;
+		/* mesh LOD swap – unchanged */
+		const useHigh = Math.floor(this.timer * 30) % 2 === 0;
+		this.current  = useHigh ? this.highDrawer : this.lowDrawer;
 
-if (this.isFirefly) {
-    const flick = 0.85 + 0.15 * Math.sin(this.timer*10.0 + this.seed);
-    this.glowFlick = flick;
-    if (light_id !== null) {
-        lights[light_id+1].intensity = [
-            0.15*flick, 0.15*flick, 0.10*flick   // cooler tint
-        ];
-    }
-}
+	if (this.isFirefly) {
+		const flick = 0.85 + 0.15 * Math.sin(this.timer*10.0 + this.seed);
+		this.glowFlick = flick;
+		if (light_id !== null) {
+			lights[light_id+1].intensity = [
+				0.15*flick, 0.15*flick, 0.10*flick   // cooler tint
+			];
+		}
+	}
     /* -------- flight logic -------- */
     // 3-A: steer toward the current waypoint
     const dir = [
@@ -152,21 +152,6 @@ if (this.isFirefly) {
         spheres[this.sphereIdx].center = this.position.slice();
     }
 }
-
-	// // Modified update
-	// update(dt, light_id) {
-	// 	this.timer += dt;
-	// 	const useHigh = Math.floor(this.timer * 30) % 2 === 0;
-	// 	this.current = useHigh ? this.highDrawer : this.lowDrawer;
-
-	// 	for (let i = 0; i < 3; i++) {
-	// 		// Update position with velocity integration as in AMR
-	// 	}
-	// 	if (light_id !== null) {
-	// 		lights[light_id].position = this.position; // Update light position
-	// 	}
-
-	// }
 
 	setTextureFromFile(imgFilePath) {
 		console.log("Loaded texture", imgFilePath);

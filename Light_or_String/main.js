@@ -139,7 +139,19 @@ const raytraceFS_header = `
 	precision highp float;
 	precision highp int;
 `;
-
+const sphereVS = `
+attribute vec3 p;      // sphere vertex on a unit sphere
+uniform mat4  mvp;     // model-view-projection matrix
+uniform vec3  center;  // sphere center (world)
+uniform float radius;  // sphere radius
+varying vec3 pos;      // world-space position (to fragment)
+varying vec3 normal;   // world-space normal (to fragment)
+void main() {
+    pos = p*radius + center;         // scale & translate unit sphere
+    gl_Position = mvp * vec4(pos,1); // to clip space
+    normal = p;                      // unit-sphere normal = position on unit sphere
+}
+`;
 const raytraceFS_secondary = `
 	uniform Material mtl;
 	uniform vec3     campos;

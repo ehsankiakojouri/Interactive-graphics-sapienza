@@ -182,7 +182,8 @@ class Projectile {
         SimTimeStep(dt,this.pos,this.vel,this.springs,this.stiffness,damping,this.mass,totalAcc,this.restitution);
 
         // Fade the launch acceleration so that after a short time only gravity remains
-        this.launchAcc.scale(Math.max(0, 1 - this.accFade * dt));        this.updateMesh();
+        this.launchAcc.scale(Math.max(0, 1 - this.accFade * dt));
+        this.updateMesh();
         const c=this.computeCenter();
         this._position=[c.x,c.y,c.z];
         if(this.sphereIdx!==null) spheres[this.sphereIdx].center=this._position.slice();

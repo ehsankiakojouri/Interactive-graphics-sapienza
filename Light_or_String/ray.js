@@ -57,7 +57,7 @@ class RayTracer
 	}
 	init()
 	{
-		this.initProg( document.getElementById('sphereVS').text, raytraceFS_secondary);
+		this.initProg(sphereVS, raytraceFS_secondary);
 		if ( ! this.prog ) return;
 		this.sphere.prog = this.prog;
 		this.sphere.init();
@@ -76,7 +76,7 @@ class RayTracer
                 for (let i = 0; i < lights.length; ++i) {
                         gl.uniform3fv(this.uLightPos[i], lights[i].position);
                         gl.uniform3fv(this.uLightInt[i], lights[i].intensity);
-						gl.uniform1f(this.uLightRad[i], lights[i].radius);
+                        gl.uniform1f(this.uLightRad[i], lights[i].radius);
 
                 }
         }
@@ -132,7 +132,15 @@ uniform samplerCube envMap;
 
 float reflectionBiasCoefficient = 1e-9;
 
+
+// Solve quadratic for every sphere:
+// |ray.pos + t*ray.dir - center|^2 = radius^2
+// a = dot(dir,dir), b = 2*dot(dir, pos-center), c = |pos-center|^2 - r^2
+// delta = b^2 - 4ac ; take smallest t ≥ eps
+// Fill: hit.t, hit.position, hit.normal, hit.mtl, hit.center, hit.radius
 bool IntersectRay( inout HitInfo hit, Ray ray );
+
+
 float SoftShadow( Ray ray, Light light );
 
 // Shades the given point and returns the computed color.
@@ -242,6 +250,10 @@ vec4 RayTracer( Ray ray )
                                 clr += hit.mtl.k_s * textureCube(envMap, r.dir.xzy).rgb * edgeFade;
                         }
                 }
+
+                // proxy color for hornets
+                vec3 hornetColor = vec3(0.125, 0.0875, 0.025); // yellow–orange
+                clr = mix(clr, hornetColor, 0.6);
 
 		return vec4( clr, 1 );	// return the accumulated color, including the reflections
 	} else {

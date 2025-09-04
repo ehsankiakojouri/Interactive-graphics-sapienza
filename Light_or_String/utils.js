@@ -160,6 +160,7 @@ function randBetween(min, max) {
     return min + Math.random() * (max - min);
 }
 
+// Hue, Saturation, and Value
 function hsvToRgb(h, s, v) {
     let r, g, b;
     let i = Math.floor(h * 6);

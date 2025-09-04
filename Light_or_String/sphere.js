@@ -177,9 +177,9 @@ class GlowSprite {
 
         const LAYERS = 20;           // how many shells
         const GAMMA  = 0.95;        // base γ  (outermost shell)
-        const RAD_K  = 1.4;         // radius→fade multiplier (same as before)
+        const RAD_K  = 1.4;         // radius→fade multiplier
 		const BASE_INT = 0.001;   // outermost shell
-		const CORE_INT = 0.05;   // innermost shell (optional)
+		const CORE_INT = 0.05;   // innermost shell
 
 		for (let i = 0; i < LAYERS; ++i) {
 			const g      = Math.pow(GAMMA, i);          // γ, γ², γ³…
