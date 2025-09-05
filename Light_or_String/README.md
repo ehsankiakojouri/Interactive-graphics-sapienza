@@ -1,7 +1,9 @@
-# 🕹️ Light or Sting (incomplete)
+# 🕹️ Light or Sting
 
 **Light or Sting** is a real-time interactive game developed as part of the **Interactive Graphics** course at **Sapienza University of Rome**. In this game, players use a virtual **slingshot** to eliminate aggressive hornets while carefully avoiding friendly fireflies that illuminate the scene. The game challenges the player's reflexes and attention to detail, blending gameplay with basic interactive graphics principles.
 
+
+This repository contains the finalized version submitted for the course, complete with polished assets and core mechanics.
 ---
 
 ## 🎮 Gameplay Overview
@@ -59,3 +61,14 @@ All assets are used under their respective licenses and credited properly.
 ## 🚀 Running the Game
 
 The game is web-based and can be run in a modern browser.
+
+### Running Locally
+1. Open a terminal in the `Light_or_String` directory and start a simple HTTP server, for example:
+   ```bash
+   python3 -m http.server
+   ```
+   or `npx http-server`.
+2. Navigate to `http://localhost:8000` (or the port shown in the terminal) and open `index.html`.
+3. Use the slingshot controls described above to play.
+
+The project relies on WebGL and has been tested in the latest versions of Chrome and Firefox.
